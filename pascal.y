@@ -22,7 +22,7 @@ int yydebug = 1;
 %token GE
 %token PLUS
 %token MINUS
-%token MULT
+%token MUL
 %token DIV
 %token RP
 %token LP
@@ -33,8 +33,18 @@ int yydebug = 1;
 %token ELSE
 %token WHILE
 %token DO
+%token BEGINN END
+%token CASE 
+%token DOWNTO
+%token FOR
+%token GOTO
+%token INTEGER
+%token LB RB
+%token NOT OR AND MOD
+%token OF
+%token READ REPEAT TO UNEQUAL UNTIL
 %token NUMBER SYS_CON SYS_FUNCT SYS_PROC SYS_TYPE
-%token STRING CHAR REAL INTEGER CONST
+%token CHAR CONST STRING REAL
 %start program
 %type <a> program program_head routine sub_routine label_part const_part
 %type <a> const_expr_list const_value routine_head 
@@ -227,6 +237,122 @@ val_para_list:
 	name_list
 ;
 */
+
+routine_body :  
+	compound_stmt
+;
+compound_stmt : 
+	BEGINN  stmt_list  END
+;
+stmt_list : 
+		stmt_list  stmt  SEMI  
+		|  
+		
+;
+stmt : 
+	INTEGER  COLON  non_label_stmt  
+	|  
+	non_label_stmt
+;
+non_label_stmt : 
+	assign_stmt 
+	| proc_stmt 
+	| compound_stmt 
+	| if_stmt 
+	| repeat_stmt 
+	| while_stmt
+	| for_stmt
+	| case_stmt 
+	| goto_stmt
+;
+assign_stmt : 
+	ID  ASSIGN  expression
+	| ID LB expression RB ASSIGN expression
+	| ID  DOT  ID  ASSIGN  expression
+;
+proc_stmt : 
+	ID
+	|  ID  LP  args_list  RP
+	|  SYS_PROC
+	|  SYS_PROC  LP  expression_list  RP
+	|  READ  LP  factor  RP
+;
+if_stmt : 
+	IF  expression  THEN  else_clause
+;
+else_clause : 
+	ELSE stmt 
+	| 
+;
+repeat_stmt : 
+	REPEAT  stmt_list  UNTIL  expression
+;
+while_stmt : 
+	WHILE  expression  DO stmt
+;
+for_stmt : 
+	FOR  ID  ASSIGN  expression  direction  expression  DO stmt
+;
+direction : 
+	TO 
+	| DOWNTO
+;
+case_stmt : 
+	CASE expression OF case_expr_list  END
+;
+case_expr_list : 
+	case_expr_list  case_expr  
+	|  case_expr
+;
+case_expr : 
+	const_value  COLON  stmt  SEMI
+	|  ID  COLON  stmt  SEMI
+;
+goto_stmt : 
+	GOTO  INTEGER
+;
+expression_list : 
+	expression_list  COMMA  expression  
+	|  expression
+;
+expression : 
+	expression  GE  expr  
+	|  expression  GT  expr  
+	|  expression  LE  expr
+    |  expression  LT  expr  
+	|  expression  EQUAL  expr  
+	|  expression  UNEQUAL  expr  
+	|  expr
+;
+expr : 
+	expr  PLUS  term  
+	|  expr  MINUS  term  
+	|  expr  OR  term  
+	|  term
+;
+term : 
+	term  MUL  factor  
+	|  term  DIV  factor  
+	|  term  MOD  factor 
+ 	|  term  AND  factor  
+	|  factor
+;
+factor : 
+	NAME  
+	|  NAME  LP  args_list  RP  
+	|  SYS_FUNCT SYS_FUNCT  LP  args_list  RP  
+	|  const_value  
+	|  LP  expression  RP
+	|  NOT  factor  
+	|  MINUS  factor  
+	|  ID  LB  expression  RB
+	|  ID  DOT  ID
+;
+args_list : 
+	args_list  COMMA  expression  
+	|  expression
+;
+
 %%
 int main(int argc, char** argv) {
 	yyparse();
