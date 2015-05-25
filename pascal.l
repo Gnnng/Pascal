@@ -30,7 +30,6 @@
 "while"  	{ return WHILE; }
 "do"     	{ return DO; }
 "Program" 	{ yylval.debug = strdup(yytext); return PROGRAM; }
-[0-9]+   	{ yylval.debug = strdup(yytext); return NUMBER; }
 "."      	{ yylval.debug = strdup(yytext); return DOT; }
 "false" | 
 "maxint" | 
@@ -48,6 +47,7 @@
 "integer" |
 "real"    	{ return SYS_TYPE;}
 "const" 	{ yylval.debug = strdup(yytext); return CONST;} 
+[0-9]+   	{ yylval.debug = strdup(yytext); printf("%s\n", yytext); return INTEGER; }
 ([_a-zA-Z])([_a-zA-Z0-9])* { yylval.debug = strdup(yytext); return ID; }
 [ \n\t]+
 .		{ printf("Invalid character\n");} 		

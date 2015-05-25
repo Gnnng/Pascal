@@ -33,18 +33,27 @@ int yydebug = 1;
 %token ELSE
 %token WHILE
 %token DO
-%token NUMBER SYS_CON SYS_FUNCT SYS_PROC SYS_TYPE NAME
+%token NUMBER SYS_CON SYS_FUNCT SYS_PROC SYS_TYPE
 %token STRING CHAR REAL INTEGER CONST
 %start program
 %type <a> program program_head routine sub_routine label_part const_part
-%type <a> const_expr_list const_value routine_head
-%type <debug> DOT PROGRAM ID SEMI CONST EQUAL NAME INTEGER REAL
+%type <a> const_expr_list const_value routine_head 
+%type <debug> ID NAME
+%type <debug> DOT PROGRAM SEMI CONST EQUAL INTEGER REAL
 %type <debug> CHAR STRING SYS_CON
 %%
+
+NAME:
+	ID {
+		$$ = ast_newNode1($1);
+		$$.debug = "name";
+	}
+;
 
 program:
 	program_head routine DOT { 
 		$$ = ast_newNode3($1, $2, ast_dbg($3));
+		ast_travel($$);
 	}
 ;
 
@@ -55,7 +64,7 @@ program_head:
 ;
 
 routine:
-	routine_head				{ $$ = ast_newNode1($1); }
+	routine_head				{ $$ = ast_newNode1($1); $$->debug = "routine"; }
 ;
 
 sub_routine:
@@ -63,29 +72,43 @@ sub_routine:
 ;
 
 routine_head:
-	label_part const_part		{ $$ = ast_newNode2($1, $2); }
-	/* label_part const_part type_part var_part routine_par */
+	// FIXME: need to start with label_part
+	label_part const_part		{ 
+		$$ = ast_newNode2($1, $2); 
+		if ($2 == NULL) 
+			$$->debug = "empty routine_head";
+		else 
+			$$->debug = "routine_head";
+	}
+	//const_part		{ $$ = ast_newNode1($1); $$->debug = "routine_head";}
+	/* label_part const_part type_part var_part routine_part */
 ;
 
-label_part: 					{ $$ = NULL; }
+label_part: 					{ $$ = ast_dbg("label_part"); }
 ;
 
-const_part: 
+const_part:
 	CONST const_expr_list {
 		$$ = ast_newNode2(ast_dbg($1), $2);
+		printf("in const_part\n");
+		$$->debug = "const_part";
 	}
 	| 							{ $$ = NULL; }
 ;
 
 const_expr_list:
-	const_expr_list NAME EQUAL const_value SEMI { 
+	// FIXME ID --> NAME
+	const_expr_list ID EQUAL const_value SEMI { 
+		printf("in const_expr_list recursively\n");
 		$$ = ast_newNode5($1, ast_dbg($2), ast_dbg($3), $4, ast_dbg($5)); }
-	| NAME EQUAL const_value SEMI {
+	// FIXME ID --> NAME
+	| ID EQUAL const_value SEMI {
+		printf("in const_expr_list\n");
 		$$ = ast_newNode4(ast_dbg($1), ast_dbg($2), $3, ast_dbg($4)); }
 ;
 
 const_value:
-	INTEGER  					{ $$ = ast_dbg($1);}
+	INTEGER  					{ $$ = ast_dbg($1); printf("%s\n", $1); }
 	| REAL 						{ $$ = ast_dbg($1);}
 	| CHAR 						{ $$ = ast_dbg($1);}
 	| STRING 					{ $$ = ast_dbg($1);}
