@@ -14,21 +14,39 @@
 "<="     { return LE; }
 ">"      { return GT; }
 ">="     { return GE; }
+"<>"     { return UNEQUAL; }
 "+"      { return PLUS; }
 "-"      { return MINUS; }
-"*"      { return MULT; }
+"*"      { return MUL; }
 "/"      { return DIV; }
 ")"      { return RP; }
 "("      { return LP; }
+"["		 { return LB; }
+"]"      { return RB; }
 ":="     { return ASSIGN; }
-";"      { return COLON; }
+";"      { return SEMI; }
+","		 { return COMMA; }
+":"		 { return COLON; }
+"begin"  { return BEGIN; }
+"case"   { return CASE; }
+"for"    { return FOR; }
+"goto"   { return GOTO; }
+"mod"    { return MOD; }
+"and"    { return AND; }
+"or"     { return OR; }
+"read"   { return read; }
+"repeat" { return REPEAT; }
+"until"  { return UNTIL; }
 "if"     { return IF; }
 "then"   { return THEN; }
 "else"   { return ELSE; }
 "while"  { return WHILE; }
 "do"     { return DO; }
+"downto" { return DOWNTO; } 
+"to"     { return TO; }
+"of"     { return OF; }
 "Program" { return PROGRAM; }
-[0-9]+   { yylval = atoi(yytext); return NUMBER; }
+[0-9]+   { yylval = atoi(yytext); return INTEGER; }
 "."      { return DOT; }
 "false" | "maxint" | "true"   { return SYS_CON; }
 "abs" | "chr" | "ord" | "pred" | "sqr" | "succ"    { return SYS_FUNCT; }
