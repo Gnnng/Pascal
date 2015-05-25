@@ -9,32 +9,46 @@
 
 %}
 %%
-"="      { return EQUAL; }
-"<"      { return LT; }
-"<="     { return LE; }
-">"      { return GT; }
-">="     { return GE; }
-"+"      { return PLUS; }
-"-"      { return MINUS; }
-"*"      { return MULT; }
-"/"      { return DIV; }
-")"      { return RP; }
-"("      { return LP; }
-":="     { return ASSIGN; }
-";"      { return COLON; }
-"if"     { return IF; }
-"then"   { return THEN; }
-"else"   { return ELSE; }
-"while"  { return WHILE; }
-"do"     { return DO; }
-"Program" { return PROGRAM; }
-[0-9]+   { yylval = atoi(yytext); return NUMBER; }
-"."      { return DOT; }
-"false" | "maxint" | "true"   { return SYS_CON; }
-"abs" | "chr" | "ord" | "pred" | "sqr" | "succ"    { return SYS_FUNCT; }
-"write" | "writeln"    { return SYS_PROC; }
-"boolean"|"char"|"integer"|"real"    {return SYS_TYPE;}
-([_a-zA-Z])([_a-zA-Z0-9])* { return ID; }
+"="      	{ yylval.debug = strdup(yytext); return EQUAL; }
+"<"      	{ return LT; }
+"<="     	{ return LE; }
+">"      	{ return GT; }
+">="     	{ return GE; }
+"+"      	{ return PLUS; }
+"-"      	{ return MINUS; }
+"*"      	{ return MULT; }
+"/"      	{ return DIV; }
+")"      	{ return RP; }
+"("      	{ return LP; }
+":="     	{ return ASSIGN; }
+","		 	{ yylval.debug = strdup(yytext); return COMMA; }
+":" 	 	{ yylval.debug = strdup(yytext); return COLON; }
+";"      	{ yylval.debug = strdup(yytext); return SEMI; }
+"if"     	{ return IF; }
+"then"   	{ return THEN; }
+"else"   	{ return ELSE; }
+"while"  	{ return WHILE; }
+"do"     	{ return DO; }
+"Program" 	{ yylval.debug = strdup(yytext); return PROGRAM; }
+[0-9]+   	{ yylval.debug = strdup(yytext); return NUMBER; }
+"."      	{ yylval.debug = strdup(yytext); return DOT; }
+"false" | 
+"maxint" | 
+"true"   	{ return SYS_CON; }
+"abs" |
+"chr" | 
+"ord" | 
+"pred" | 
+"sqr" | 
+"succ"    	{ return SYS_FUNCT; }
+"write" | 
+"writeln"  	{ return SYS_PROC; }
+"boolean" |
+"char" |
+"integer" |
+"real"    	{ return SYS_TYPE;}
+"const" 	{ yylval.debug = strdup(yytext); return CONST;} 
+([_a-zA-Z])([_a-zA-Z0-9])* { yylval.debug = strdup(yytext); return ID; }
 [ \n\t]+
 .		{ printf("Invalid character\n");} 		
 %%
