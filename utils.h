@@ -15,7 +15,7 @@ struct ast_struct {
 	ast_node** ch;		// children
 	char* debug;		// debug info
 	int val;
-	
+
 };
 
 void ast_travel(ast_node* node);
@@ -25,5 +25,5 @@ ast_node* ast_newNode2(ast_node* c1, ast_node* c2);
 ast_node* ast_newNode3(ast_node* c1, ast_node* c2, ast_node* c3);
 ast_node* ast_newNode4(ast_node* c1, ast_node* c2, ast_node* c3, ast_node* c4);
 ast_node* ast_newNode5(ast_node* c1, ast_node* c2, ast_node* c3, ast_node* c4, ast_node* c5);
-
+ast_node* ast_newNode6(ast_node* c1, ast_node* c2, ast_node* c3, ast_node* c4, ast_node* c5, ast_node* c6);
 #endif
