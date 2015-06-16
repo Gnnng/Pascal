@@ -1,8 +1,8 @@
 # Authors
 
-3120101284 李逸婷
-3120000575 张宇昊
-3120000568 弓得力
+- Li Yiting ([@lyt9304](http://github.com/lyt9304))
+- Zhang yuhao ([@denil1111](http://github.com/denil1111))
+- Gong Deli ([@Gnnng](http://github.com/Gnnng))
 
 # Reference
 * LLVM官网教程
@@ -24,5 +24,6 @@
 * 另外一个例子
 
 	http://my.oschina.net/linlifeng/blog/97457
+
 
 
