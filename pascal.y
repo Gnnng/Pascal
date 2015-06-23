@@ -113,7 +113,7 @@ program_head:
 		$$ = ast_newNode3(ast_dbg($1), ast_dbg($2), ast_dbg($3));
 		$$->debug = "program_head";
 	}
-	| {$$ = $$ = ast_dbg("empty label_part");}
+//	| {$$ = $$ = ast_dbg("empty label_part");}
 ;
 
 routine:
@@ -127,8 +127,8 @@ sub_routine:
 
 routine_head:
 	// TODO add routine_part will generate error: fatal error: symbol program does not derive any sentences
-	label_part const_part type_part var_part routine_part{ 
-		$$ = ast_newNode5($1, $2, $3, $4, $5);
+	label_part const_part type_part var_part { 
+		$$ = ast_newNode4($1, $2, $3, $4);
 		$$->debug = "routine_head";
 	}
 	/* routine_part  */
@@ -232,8 +232,8 @@ var_decl:
 routine_part:
 	routine_part function_decl  { $$ = ast_newNode2($1, $2);$$->debug = "routine_part";}
 	| routine_part procedure_decl 					{ $$ = ast_newNode2($1, $2);$$->debug = "routine_part";}
-	//| procedure_decl			{$$ = ast_newNode1($1);$$->debug = "routine_part";}
-	//| function_decl				{$$ = ast_newNode2($1);$$->debug = "routine_part";}
+	| procedure_decl			{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
+	| function_decl				{ $$ = ast_newNode2($1);$$->debug = "routine_part";}
 	| 							{ $$ = ast_dbg("empty routine_part");}
 ;
 
