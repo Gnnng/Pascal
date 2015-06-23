@@ -58,10 +58,15 @@ void ast_travel(ast_node* node) {
 }
 
 ast_node* ast_dbg(char* debug) {
-	printf("new %s\n",debug);
+	// printf("new %s\n",debug);
+	int len = strlen(debug);
 	ast_node* node = calloc(1, sizeof(ast_node));
-	node->debug = debug;
-
+	node->debug = calloc(len + 3, sizeof(char));
+	node->debug[0] = '\"';
+	strncpy(node->debug + 1, debug, len);
+	node->debug[1 + len] = '\"';
+	node->debug[2 + len] = '\0';
+	// node->debug = debug;
 	node->ch = calloc(1, sizeof(ast_node*));
 	return node;
 }
