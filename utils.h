@@ -26,4 +26,7 @@ ast_node* ast_newNode3(ast_node* c1, ast_node* c2, ast_node* c3);
 ast_node* ast_newNode4(ast_node* c1, ast_node* c2, ast_node* c3, ast_node* c4);
 ast_node* ast_newNode5(ast_node* c1, ast_node* c2, ast_node* c3, ast_node* c4, ast_node* c5);
 ast_node* ast_newNode6(ast_node* c1, ast_node* c2, ast_node* c3, ast_node* c4, ast_node* c5, ast_node* c6);
+ast_node* ast_newNode7(ast_node* c1, ast_node* c2, ast_node* c3, ast_node* c4, ast_node* c5, ast_node* c6, ast_node* c7);
+ast_node* ast_newNode8(ast_node* c1, ast_node* c2, ast_node* c3, ast_node* c4, ast_node* c5, ast_node* c6, ast_node* c7, ast_node* c8);
+
 #endif

@@ -18,7 +18,7 @@
 "+"      { YYLVAL_DEBUG return PLUS; }
 "-"      { YYLVAL_DEBUG return MINUS; }
 "*"      { YYLVAL_DEBUG return MUL; }
-"/"      { YYLVAL_DEBUG return DIV; }
+"/"|"div"      { YYLVAL_DEBUG return DIV; }		
 ")"      { YYLVAL_DEBUG return RP; }
 "("      { YYLVAL_DEBUG return LP; }
 "["		 { YYLVAL_DEBUG return LB; }
@@ -28,13 +28,14 @@
 ","		 { YYLVAL_DEBUG return COMMA; }
 ":"		 { YYLVAL_DEBUG return COLON; }
 "begin"  { YYLVAL_DEBUG return BEGINN; }
+"end"	 { YYLVAL_DEBUG return END; }
 "case"   { YYLVAL_DEBUG return CASE; }
 "for"    { YYLVAL_DEBUG return FOR; }
 "goto"   { YYLVAL_DEBUG return GOTO; }
 "mod"    { YYLVAL_DEBUG return MOD; }
 "and"    { YYLVAL_DEBUG return AND; }
 "or"     { YYLVAL_DEBUG return OR; }
-"read"   { YYLVAL_DEBUG return READ; }
+"read"|"readln"   { YYLVAL_DEBUG return READ; }
 "repeat" { YYLVAL_DEBUG return REPEAT; }
 "until"  { YYLVAL_DEBUG return UNTIL; }
 "if"     { YYLVAL_DEBUG return IF; }
@@ -55,11 +56,11 @@
 "var"    { YYLVAL_DEBUG return VAR;}
 [0-9]+   { YYLVAL_DEBUG  return INTEGER; }
 "."      { YYLVAL_DEBUG return DOT; }
-"false" | "maxint" | "true"   { return SYS_CON; }
-"abs" | "chr" | "ord" | "pred" | "sqr" | "succ"    { return SYS_FUNCT; }
-"write" | "writeln"    { return SYS_PROC; }
-"boolean"|"char"|"integer"|"real"    {return SYS_TYPE;}
-([_a-zA-Z])([_a-zA-Z0-9])* { yylval.debug = strdup(yytext); return ID; }
+"write"|"writeln" {YYLVAL_DEBUG return SYS_PROC; }
+"false"|"maxint"|"true"   { YYLVAL_DEBUG return SYS_CON; }
+"abs"|"chr"|"ord"|"pred"|"sqr"|"succ"    { YYLVAL_DEBUG return SYS_FUNCT; }
+"boolean"|"char"|"integer"|"real"|"longint"    {YYLVAL_DEBUG return SYS_TYPE;}
+([_a-zA-Z])([_a-zA-Z0-9])* { yylval.debug = strdup(yytext);return ID; }
 [ \n\t]+
 .		{ printf("Invalid character\n");} 		
 %%

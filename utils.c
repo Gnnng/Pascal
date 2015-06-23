@@ -58,6 +58,7 @@ void ast_travel(ast_node* node) {
 }
 
 ast_node* ast_dbg(char* debug) {
+	printf("new %s\n",debug);
 	ast_node* node = calloc(1, sizeof(ast_node));
 	node->debug = debug;
 
@@ -127,5 +128,35 @@ ast_node* ast_newNode6(ast_node* c1, ast_node* c2, ast_node* c3, ast_node* c4, a
 	node->ch[5] = c6;
 	return node;
 }
+
+ast_node* ast_newNode7(ast_node* c1, ast_node* c2, ast_node* c3, ast_node* c4, ast_node* c5, ast_node* c6, ast_node* c7) {
+	ast_node* node = calloc(1, sizeof(ast_node));
+
+    node->ch = calloc(8, sizeof(ast_node*));
+	node->ch[0] = c1;
+	node->ch[1] = c2;
+	node->ch[2] = c3;
+	node->ch[3] = c4;
+	node->ch[4] = c5;
+	node->ch[5] = c6;
+	node->ch[6] = c7;
+	return node;
+}
+
+ast_node* ast_newNode8(ast_node* c1, ast_node* c2, ast_node* c3, ast_node* c4, ast_node* c5, ast_node* c6, ast_node* c7, ast_node* c8) {
+	ast_node* node = calloc(1, sizeof(ast_node));
+
+    node->ch = calloc(9, sizeof(ast_node*));
+	node->ch[0] = c1;
+	node->ch[1] = c2;
+	node->ch[2] = c3;
+	node->ch[3] = c4;
+	node->ch[4] = c5;
+	node->ch[5] = c6;
+	node->ch[6] = c7;
+	node->ch[7] = c8;
+	return node;
+}
+
 
 
