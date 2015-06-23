@@ -1,13 +1,16 @@
 NAME=pascal
 
+LLVM_CONFIG = /usr/local/opt/llvm/bin/llvm-config
+FLAGS = `$(LLVM_CONFIG) --cxxflags --ldflags --libs --system-libs` 
+
 all:
-	bison -d ${NAME}.y
-	flex pascal.l
-	gcc -o ${NAME} utils.c ${NAME}.tab.c lex.yy.c -ll -g
+	bison -d -o src/parser.cpp src/${NAME}.y
+	flex -o src/tokenizer.cpp src/${NAME}.l
+	g++ -o ${NAME} src/utils.c src/parser.cpp src/tokenizer.cpp -ll -g $(FLAGS)
 
 # make debug - check the bison output report
 debug:
-	bison -d ${NAME}.y -v
+	bison -d -o src/parser.cpp src/${NAME}.y -v
 
 clean:
-	-rm ${NAME}.output
+	-rm src/parser.output

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #include "utils.h"
-#include "pascal.tab.h"
+#include "parser.hpp"
 #define YYLVAL_DEBUG yylval.debug = strdup(yytext); 
 %}
 %%

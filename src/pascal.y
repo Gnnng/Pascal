@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 #include "utils.h"
-#include "pascal.tab.h"
+#include "parser.hpp"
 int yydebug = 1;
 %}
 
