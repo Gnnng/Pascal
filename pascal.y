@@ -232,6 +232,8 @@ var_decl:
 routine_part:
 	routine_part function_decl  { $$ = ast_newNode2($1, $2);$$->debug = "routine_part";}
 	| routine_part procedure_decl 					{ $$ = ast_newNode2($1, $2);$$->debug = "routine_part";}
+	//| procedure_decl			{$$ = ast_newNode1($1);$$->debug = "routine_part";}
+	//| function_decl				{$$ = ast_newNode2($1);$$->debug = "routine_part";}
 	| 							{ $$ = ast_dbg("empty routine_part");}
 ;
 
@@ -240,7 +242,7 @@ function_decl:
 ;
 
 function_head:
-	FUNCTION ID parameters COLON simple_type_decl 	{ $$ = ast_newNode5(ast_dbg($1), ast_dbg($2), $3, $4, $5); $$->debug = "function_head";}
+	FUNCTION ID parameters COLON simple_type_decl 	{ $$ = ast_newNode5(ast_dbg($1), ast_dbg($2), $3, ast_dbg($4), $5); $$->debug = "function_head";}
 ;
 
 procedure_decl:
@@ -308,9 +310,9 @@ assign_stmt :
 	| ID  DOT  ID  ASSIGN  expression           { $$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),ast_dbg($4),$5);$$->debug = "assign_stmt";} 
 ;
 proc_stmt : 
-	ID
+	ID                   						{ $$ = ast_dbg($1);$$->debug = "proc_stmt";}
 	|  ID  LP  args_list  RP 					{ $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "proc_stmt";}
-	|  SYS_PROC									{ $$ = ast_newNode1($1);$$->debug = "proc_stmt";}
+	|  SYS_PROC									{ $$ = ast_dbg($1);$$->debug = "proc_stmt";}
 	|  SYS_PROC  LP  expression_list  RP        { $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "proc_stmt";}
 
 	|  READ  LP  factor  RP 					{ $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "proc_stmt";}
@@ -347,7 +349,7 @@ case_expr_list :
 ;
 case_expr : 
 	const_value  COLON  stmt  SEMI				{ $$ = ast_newNode4($1,ast_dbg($2),$3,ast_dbg($4));$$->debug = "case_expr";}
-	|  ID  COLON  stmt  SEMI					{ $$ = ast_newNode4($1,ast_dbg($2),$3,ast_dbg($4));$$->debug = "case_expr";}
+	|  ID  COLON  stmt  SEMI					{ $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "case_expr";}
 ;
 goto_stmt : 
 	GOTO  INTEGER 								{$$ = ast_newNode2(ast_dbg($1),ast_dbg($2));$$->debug = "goto_stmt";}
