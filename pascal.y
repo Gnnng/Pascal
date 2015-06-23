@@ -260,7 +260,7 @@ parameters:
 
 para_decl_list:
 	para_decl_list SEMI para_type_list 				{ $$ = ast_newNode3($1, ast_dbg($2), $3);$$->debug = "para_decl_list";}
-	| para_type_list								{ $$ = ast_newNode1($1);}
+	| para_type_list								{ $$ = ast_newNode1($1);$$->debug = "para_decl_list";}
 ;
 
 para_type_list:
