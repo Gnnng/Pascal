@@ -47,7 +47,7 @@
 "to"     { YYLVAL_DEBUG return TO; }
 "of"     { YYLVAL_DEBUG return OF; }
 "const"  { YYLVAL_DEBUG return CONST;}
-"Program" { YYLVAL_DEBUG return PROGRAM; }
+"program" { YYLVAL_DEBUG return PROGRAM; }
 "function" { YYLVAL_DEBUG return FUNCTION; }
 "array"  { YYLVAL_DEBUG return ARRAY; }
 "procedure" { YYLVAL_DEBUG return PROCEDURE;}
