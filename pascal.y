@@ -5,9 +5,11 @@
 
 #include "utils.h"
 #include "pascal.tab.h"
+#include "ccalc.h"
 int yydebug = 1;
+#define YYERROR_VERBOSE 1
 %}
-
+%locations
 %union{
 	ast_node *a;
 	int integer;
@@ -59,7 +61,7 @@ int yydebug = 1;
 %type <a> stmt_list stmt non_label_stmt
 %type <a> assign_stmt proc_stmt if_stmt else_clause repeat_stmt while_stmt for_stmt
 %type <a> direction case_stmt case_expr_list case_expr goto_stmt expression_list
-%type <a> expression expr term factor args_list
+%type <a> expression expr term factor args_list semi_stmt
 %type <debug> PROGRAM ID DOT NAME
 %type <debug> EQUAL
 %type <debug> LT
@@ -104,7 +106,7 @@ program:
 	program_head routine DOT { 
 		$$ = ast_newNode3($1, $2, ast_dbg($3));
 		$$->debug = "Start point";
-		ast_travel($$);
+		//ast_travel($$);
 	}
 ;
 
@@ -283,8 +285,12 @@ routine_body :
 compound_stmt : 
 	BEGINN  stmt_list  END		{ $$ = ast_newNode3(ast_dbg($1),$2,ast_dbg($3));$$->debug = "compound_stmt";}
 ;
+semi_stmt :
+	stmt SEMI                   { $$ = ast_newNode2($1,ast_dbg($2));$$->debug = "stmt_list";} 
+	| stmt error   				 
+;            		
 stmt_list : 
-		stmt_list  stmt  SEMI   { $$ = ast_newNode3($1,$2,ast_dbg($3));$$->debug = "stmt_list";}
+		stmt_list  semi_stmt    { $$ = ast_newNode2($1,$2);$$->debug = "stmt_list";}	
 		|  						{ $$ = ast_dbg("empty stmt_list");}
 		
 ;
@@ -365,6 +371,7 @@ expression :
 	|  expression  EQUAL  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
 	|  expression  UNEQUAL  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
 	|  expr 									{$$ = ast_newNode1($1);$$->debug = "expression";}
+	|  error 									
 ;
 expr : 
 	expr  PLUS  term  							{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expr";}
@@ -396,6 +403,7 @@ args_list :
 ;
 %%
 int main(int argc, char** argv) {
+	init_buffer();
 	yyparse();
 	return 0;
 }
