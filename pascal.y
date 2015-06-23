@@ -115,7 +115,7 @@ program_head:
 		$$ = ast_newNode3(ast_dbg($1), ast_dbg($2), ast_dbg($3));
 		$$->debug = "program_head";
 	}
-	| {$$ = $$ = ast_dbg("empty label_part");}
+	| {$$ = ast_dbg("empty program_head");}
 ;
 
 routine:
@@ -129,7 +129,7 @@ sub_routine:
 
 routine_head:
 	// TODO add routine_part will generate error: fatal error: symbol program does not derive any sentences
-	label_part const_part type_part var_part routine_part{ 
+	label_part const_part type_part var_part routine_part { 
 		$$ = ast_newNode5($1, $2, $3, $4, $5);
 		$$->debug = "routine_head";
 	}
@@ -234,8 +234,8 @@ var_decl:
 routine_part:
 	routine_part function_decl  { $$ = ast_newNode2($1, $2);$$->debug = "routine_part";}
 	| routine_part procedure_decl 					{ $$ = ast_newNode2($1, $2);$$->debug = "routine_part";}
-	//| procedure_decl			{$$ = ast_newNode1($1);$$->debug = "routine_part";}
-	//| function_decl				{$$ = ast_newNode2($1);$$->debug = "routine_part";}
+//	| procedure_decl			{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
+//	| function_decl				{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
 	| 							{ $$ = ast_dbg("empty routine_part");}
 ;
 
@@ -324,15 +324,17 @@ proc_stmt :
 	|  READ  LP  factor  RP 					{ $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "proc_stmt";}
      
 ;
-if_stmt : 
-	IF  expression  THEN  else_clause 			{ $$ = ast_newNode4(ast_dbg($1),$2,ast_dbg($3),$4);$$->debug = "if_stmt";}
 
+// TODO: if_stmt may contains a shift/reduce conflict
+if_stmt : 
+	IF  expression THEN stmt else_clause 			{ $$ = ast_newNode5(ast_dbg($1),$2,ast_dbg($3),$4, $5);$$->debug = "if_stmt";}
 ;
+
 else_clause : 
 	ELSE stmt 									{ $$ = ast_newNode2(ast_dbg($1),$2);$$->debug = "else_clause";}
-
 	| 											{ $$ = ast_dbg("empty else_clause");}
 ;
+
 repeat_stmt : 
 	REPEAT  stmt_list  UNTIL  expression        { $$ = ast_newNode4(ast_dbg($1),$2,ast_dbg($3),$4);$$->debug = "repeat_stmt";}
 ;

@@ -53,7 +53,7 @@
 "to"     { BeginToken(yytext);YYLVAL_DEBUG return TO; }
 "of"     { BeginToken(yytext);YYLVAL_DEBUG return OF; }
 "const"  { BeginToken(yytext);YYLVAL_DEBUG return CONST;}
-"Program" { BeginToken(yytext);YYLVAL_DEBUG return PROGRAM; }
+"program" { BeginToken(yytext);YYLVAL_DEBUG return PROGRAM; }
 "function" { BeginToken(yytext);YYLVAL_DEBUG return FUNCTION; }
 "array"  { BeginToken(yytext);YYLVAL_DEBUG return ARRAY; }
 "procedure" { BeginToken(yytext);YYLVAL_DEBUG return PROCEDURE;}
