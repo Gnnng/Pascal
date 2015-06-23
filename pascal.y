@@ -319,7 +319,7 @@ proc_stmt :
      
 ;
 if_stmt : 
-	IF  expression  THEN  else_clause 			{ $$ = ast_newNode4(ast_dbg($1),$2,ast_dbg($3),$4);$$->debug = "if_stmt";}
+	IF  expression  THEN stmt else_clause 			{ $$ = ast_newNode5(ast_dbg($1),$2,ast_dbg($3),$4, $5);$$->debug = "if_stmt";}
 
 ;
 else_clause : 
