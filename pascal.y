@@ -113,7 +113,7 @@ program_head:
 		$$ = ast_newNode3(ast_dbg($1), ast_dbg($2), ast_dbg($3));
 		$$->debug = "program_head";
 	}
-	| {$$ = ast_dbg("empty label_part");}
+	| {$$ = ast_dbg("empty program_head");}
 ;
 
 routine:
