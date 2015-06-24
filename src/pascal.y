@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <iostream>
 
 #include "ast.h"
 #include "utils.h"
@@ -9,18 +10,18 @@
 
 int yydebug = 1;
 Node* ast_root;
+using namespace std;
 %}
 
 %union{
-    Node* ast_Node; 
-    Statement* ast_Statement;
-    Expression* ast_Expression;
-    Program* ast_Program;
-    TypeDecl* ast_TypeDecl;
-    VarDecl* ast_VarDecl;
-    Identifier* ast_Identifier;
-    AssignmentStmt* ast_AssignmentStmt;
-	char* debug;
+    Node* 				ast_Node; 
+    Statement* 			ast_Statement;
+    Expression* 		ast_Expression;
+    Program* 			ast_Program;
+    TypeDecl* 			ast_TypeDecl;
+    VarDecl* 			ast_VarDecl;
+    Identifier* 		ast_Identifier;
+    AssignmentStmt* 	ast_AssignmentStmt;
 }
 
 %token PROGRAM ID DOT
@@ -68,13 +69,13 @@ Node* ast_root;
 %type <ast_Node> direction case_stmt case_expr_list case_expr goto_stmt expression_list
 %type <ast_Node> args_list
 
-%type <ast_Program> program program_head routine routine_head 
-%type <ast_TypeDecl> type_part type_decl type_decl_list simple_type_decl 
-%type <ast_VarDecl> var_part var_decl_list var_decl
-%type <ast_Statement> routine_body compound_stmt stmt_list stmt non_label_stmt
-%type <ast_Identifier> name_list
-%type <ast_AssignmentStmt> assign_stmt
-%type <ast_Expression> expression expr term factor 
+%type <ast_Program> 		program program_head routine routine_head 
+%type <ast_TypeDecl> 		type_part type_decl type_decl_list simple_type_decl 
+%type <ast_VarDecl> 		var_part var_decl_list var_decl
+%type <ast_Statement> 		routine_body compound_stmt stmt_list stmt non_label_stmt
+%type <ast_Identifier>		name_list
+%type <ast_AssignmentStmt> 	assign_stmt
+%type <ast_Expression> 		expression expr term factor 
 
 %type <debug> PROGRAM ID DOT NAME
 %type <debug> EQUAL
@@ -162,6 +163,7 @@ routine_head:
 		//$$->const_part = $2;
 		//$$->type_part = $3;
 		$$->var_part = $1;
+		cerr << "routine_head parsed" << endl;
 		//TODO: route_part's ast node not implemented
 		//$$->routine_part = $5
 
@@ -355,9 +357,10 @@ val_para_list:
 ;
 
 // boundary
-routine_body :  
+routine_body:  
 	compound_stmt { 
 		$$ = $1;
+		cerr << "routine_body parsed" << endl;
 		//$$ = ast_newNode1($1);$$->debug = "routine_body";
 	}
 ;
@@ -378,7 +381,7 @@ stmt_list :
 		//$$ = ast_newNode3($1,$2,ast_dbg($3));$$->debug = "stmt_list";
 	}
 	| { 
-		//$$ = new Statement();
+		$$ = new Statement();
 		//$$ = ast_dbg("empty stmt_list");
 	}
 		
