@@ -3,14 +3,23 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
+#include "ast.h"
 #include "utils.h"
 #include "parser.hpp"
+
 int yydebug = 1;
+Node* ast_root;
 %}
 
 %union{
-	ast_node *a;
-	int integer;
+    Node* ast_Node; 
+    Statement* ast_Statement;
+    Expression* ast_Expression;
+    Program* ast_Program;
+    TypeDecl* ast_TypeDecl;
+    VarDecl* ast_VarDecl;
+    Identifier* ast_Identifier;
+    AssignmentStmt* ast_AssignmentStmt;
 	char* debug;
 }
 
@@ -47,19 +56,26 @@ int yydebug = 1;
 %token CHAR CONST STRING REAL
 %token ARRAY VAR PROCEDURE RECORD FUNCTION TYPE 
 %start program
-%type <a> program program_head routine sub_routine label_part const_part
-%type <a> const_expr_list const_value routine_head 
-%type <a> type_part type_decl_list type_decl simple_type_decl name_list 
-%type <a> procedure_head para_type_list var_para_list val_para_list
-%type <a> para_decl_list parameters procedure_decl function_decl function_head
-%type <a> routine_part var_decl var_decl_list var_part field_decl field_decl_list
-%type <a> record_type_decl array_type_decl type_definition 
-%type <a> routine_body 
-%type <a> compound_stmt
-%type <a> stmt_list stmt non_label_stmt
-%type <a> assign_stmt proc_stmt if_stmt else_clause repeat_stmt while_stmt for_stmt
-%type <a> direction case_stmt case_expr_list case_expr goto_stmt expression_list
-%type <a> expression expr term factor args_list
+
+// default type is ast node
+%type <ast_Node> sub_routine label_part const_part
+%type <ast_Node> const_expr_list const_value 
+%type <ast_Node> procedure_head para_type_list var_para_list val_para_list
+%type <ast_Node> para_decl_list parameters procedure_decl function_decl function_head
+%type <ast_Node> routine_part field_decl field_decl_list
+%type <ast_Node> record_type_decl array_type_decl type_definition 
+%type <ast_Node> proc_stmt if_stmt else_clause repeat_stmt while_stmt for_stmt
+%type <ast_Node> direction case_stmt case_expr_list case_expr goto_stmt expression_list
+%type <ast_Node> args_list
+
+%type <ast_Program> program program_head routine routine_head 
+%type <ast_TypeDecl> type_part type_decl type_decl_list simple_type_decl 
+%type <ast_VarDecl> var_part var_decl_list var_decl
+%type <ast_Statement> routine_body compound_stmt stmt_list stmt non_label_stmt
+%type <ast_Identifier> name_list
+%type <ast_AssignmentStmt> assign_stmt
+%type <ast_Expression> expression expr term factor 
+
 %type <debug> PROGRAM ID DOT NAME
 %type <debug> EQUAL
 %type <debug> LT
@@ -102,23 +118,34 @@ NAME:
 
 program:
 	program_head routine DOT { 
-		$$ = ast_newNode3($1, $2, ast_dbg($3));
-		$$->debug = "Start point";
-		ast_travel($$);
+		ast_root = $2;
+		//$$ = ast_newNode3($1, $2, ast_dbg($3));
+		//$$->debug = "Start point";
+		//ast_travel($$);
 	}
 ;
 
 program_head:
-	PROGRAM ID SEMI { 
-		$$ = ast_newNode3(ast_dbg($1), ast_dbg($2), ast_dbg($3));
-		$$->debug = "program_head";
+	PROGRAM ID SEMI {
+		//$$ = new Program();
+		//$$ = ast_newNode3(ast_dbg($1), ast_dbg($2), ast_dbg($3));
+		//$$->debug = "program_head";
 	}
-	| {$$ = ast_dbg("empty program_head");}
+	| {
+		//$$ = new Program();
+		//$$ = ast_dbg("empty program_head");
+	}
 ;
 
 routine:
 	// TODO routine_head routine_body
-	routine_head routine_body{$$ = ast_newNode2($1,$2);$$->debug = "routine";}
+	routine_head routine_body {
+		$$ = new Program();
+		$$->var_part = $1->var_part;
+		$$->stmt_list = $2;
+		delete $1;
+		//$$ = ast_newNode2($1,$2);$$->debug = "routine";
+	}
 ;
 
 sub_routine:
@@ -127,9 +154,19 @@ sub_routine:
 
 routine_head:
 	// TODO add routine_part will generate error: fatal error: symbol program does not derive any sentences
-	label_part const_part type_part var_part routine_part { 
-		$$ = ast_newNode5($1, $2, $3, $4, $5);
-		$$->debug = "routine_head";
+	//label_part const_part type_part var_part routine_part { 
+	var_part {
+		$$ = new Program();
+		$$->debug = "Routine top level";
+		//$$->label_part = $1;
+		//$$->const_part = $2;
+		//$$->type_part = $3;
+		$$->var_part = $1;
+		//TODO: route_part's ast node not implemented
+		//$$->routine_part = $5
+
+//		$$ = ast_newNode5($1, $2, $3, $4, $5);
+//		$$->debug = "routine_head";
 	}
 	/* routine_part  */
 ;
@@ -155,11 +192,13 @@ const_expr_list:
 ;
 
 const_value:
-	INTEGER  					{ $$ = ast_dbg($1);}
-	| REAL 						{ $$ = ast_dbg($1);}
-	| CHAR 						{ $$ = ast_dbg($1);}
-	| STRING 					{ $$ = ast_dbg($1);}
-	| SYS_CON					{ $$ = ast_dbg($1);}
+	INTEGER { 
+		$$ = new IntegerType(atoi($1));
+	}
+//	| REAL 						{ $$ = ast_dbg($1);}
+//	| CHAR 						{ $$ = ast_dbg($1);}
+//	| STRING 					{ $$ = ast_dbg($1);}
+//	| SYS_CON					{ $$ = ast_dbg($1);}
 ;
 
 
@@ -178,19 +217,26 @@ type_definition:
 ;
 
 type_decl:
-	simple_type_decl 			{ $$ = ast_newNode1($1);$$->debug = "type_decl";}
-	| array_type_decl			{ $$ = ast_newNode1($1);$$->debug = "type_decl";}
-	| record_type_decl			{ $$ = ast_newNode1($1);$$->debug = "type_decl";}
+	simple_type_decl { 
+		$$ = $1;
+		//$$ = ast_newNode1($1);$$->debug = "type_decl";
+	}
+//	| array_type_decl			{ $$ = ast_newNode1($1);$$->debug = "type_decl";}
+//	| record_type_decl			{ $$ = ast_newNode1($1);$$->debug = "type_decl";}
 ;
 
 simple_type_decl:
-	SYS_TYPE					{ $$ = ast_dbg($1); $$->debug = "simple_type_decl";}
-	| NAME  					{ $$ = ast_dbg($1); $$->debug = "simple_type_decl";}
-	| LP name_list RP 			{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "simple_type_decl";}
-	| const_value DOT DOT const_value 				{ $$ = ast_newNode4($1, ast_dbg($2), ast_dbg($3), $4);$$->debug = "simple_type_decl";}
-	| MINUS const_value DOT DOT const_value			{ $$ = ast_newNode5(ast_dbg($1), $2, ast_dbg($3), ast_dbg($4), $5);$$->debug = "simple_type_decl";}
-	| MINUS const_value DOT DOT MINUS const_value 	{ $$ = ast_newNode6(ast_dbg($1), $2, ast_dbg($3), ast_dbg($4), ast_dbg($5), $6);$$->debug = "simple_type_decl";}
-	| NAME DOT DOT NAME 		{ $$ = ast_newNode4(ast_dbg($1), ast_dbg($2), ast_dbg($3), ast_dbg($4));$$->debug = "simple_type_decl";}
+	SYS_TYPE { 
+		std::string type_string($1);
+		$$ = new TypeDecl(type_string);
+		//$$ = ast_dbg($1); $$->debug = "simple_type_decl";
+	}
+//	| NAME  					{ $$ = ast_dbg($1); $$->debug = "simple_type_decl";}
+//	| LP name_list RP 			{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "simple_type_decl";}
+//	| const_value DOT DOT const_value 				{ $$ = ast_newNode4($1, ast_dbg($2), ast_dbg($3), $4);$$->debug = "simple_type_decl";}
+//	| MINUS const_value DOT DOT const_value			{ $$ = ast_newNode5(ast_dbg($1), $2, ast_dbg($3), ast_dbg($4), $5);$$->debug = "simple_type_decl";}
+//	| MINUS const_value DOT DOT MINUS const_value 	{ $$ = ast_newNode6(ast_dbg($1), $2, ast_dbg($3), ast_dbg($4), ast_dbg($5), $6);$$->debug = "simple_type_decl";}
+//	| NAME DOT DOT NAME 		{ $$ = ast_newNode4(ast_dbg($1), ast_dbg($2), ast_dbg($3), ast_dbg($4));$$->debug = "simple_type_decl";}
 ;
 
 array_type_decl:
@@ -211,22 +257,54 @@ field_decl:
 ;
 
 name_list:
-	name_list COMMA ID 			{ $$ = ast_newNode3($1, ast_dbg($2), ast_dbg($3));$$->debug = "name_list";}
-	| ID 						{ $$ = ast_newNode1(ast_dbg($1));$$->debug = "name_list";}
+	name_list COMMA ID { 
+		//$$ = ast_newNode3($1, ast_dbg($2), ast_dbg($3));$$->debug = "name_list";
+		$$ = $1;
+		$1->name_list.push_back(new Identifier($3));
+	}
+	| ID {
+		$$ = new Identifier($1);
+		$$->debug = "name list start"
+		//$$ = ast_newNode1(ast_dbg($1));$$->debug = "name_list";
+	}
 ;
 
 var_part:
-	VAR var_decl_list 			{ $$ = ast_newNode2(ast_dbg($1), $2); $$->debug = "var_part";}
-	|  							{ $$ = ast_dbg("empty var_part");}
+	VAR var_decl_list 			{ 
+		$$ = new VarDecl();
+		$$->debug = "var_part";
+		$$->addVar($2); // TODO insert into symbol table;
+		//$$ = ast_newNode2(ast_dbg($1), $2); $$->debug = "var_part";
+	}
+	|  	{
+		//$$ = new VarDecl();
+		//$$ = ast_dbg("empty var_part");
+	}
 ;
 
 var_decl_list:
-	var_decl_list var_decl 		{ $$ = ast_newNode2($1, $2);$$->debug = "var_decl_list";}
-	| var_decl 					{ $$ = ast_newNode1($1);$$->debug = "var_decl_list"; }
+	var_decl_list var_decl 		{ 
+		$$ = $1;
+		$1->var_decl_list.push_back((VarDecl *)$1);
+		//$$ = ast_newNode2($1, $2);
+		//$$->debug = "var_decl_list";
+	}
+	| var_decl 					{ 
+		$$ = new VarDecl();
+		$$->debug = "var start";
+		$$->var_decl_list.push_back((VarDecl *)$1);
+		//$$ = ast_newNode1($1);$$->debug = "var_decl_list"; 
+	}
 ;
 
 var_decl:
-	name_list COLON type_decl SEMI 					{ $$ = ast_newNode4($1, ast_dbg($2), $3, ast_dbg($4));$$->debug = "var_decl";}
+	name_list COLON type_decl SEMI { 
+		$$ = new VarDecl();
+		$$->names = $1;
+		$$->type = $3;
+		$$->debug = "declaration item";
+		//$$ = ast_newNode4($1, ast_dbg($2), $3, ast_dbg($4));$$->debug = "var_decl";
+	}
 ;
 
 routine_part:
@@ -278,38 +356,65 @@ val_para_list:
 
 // boundary
 routine_body :  
-	compound_stmt				{ $$ = ast_newNode1($1);$$->debug = "routine_body";}
+	compound_stmt { 
+		$$ = $1;
+		//$$ = ast_newNode1($1);$$->debug = "routine_body";
+	}
 ;
+
 compound_stmt : 
-	BEGINN  stmt_list  END		{ $$ = ast_newNode3(ast_dbg($1),$2,ast_dbg($3));$$->debug = "compound_stmt";}
+	BEGINN  stmt_list  END { 
+		$$ = $2;
+		//$$ = ast_newNode3(ast_dbg($1),$2,ast_dbg($3));$$->debug = "compound_stmt";
+	}
 ;
 stmt_list : 
-		stmt_list stmt {yyerror("SEMI error");}
-		| stmt_list  stmt  SEMI   { $$ = ast_newNode3($1,$2,ast_dbg($3));$$->debug = "stmt_list";}
-		|  						{ $$ = ast_dbg("empty stmt_list");}
+	stmt_list stmt {
+		//yyerror("SEMI error");
+	}
+	| stmt_list  stmt  SEMI { 
+		$$ = $1;
+		$1->stmt_list.push_back($2);
+		//$$ = ast_newNode3($1,$2,ast_dbg($3));$$->debug = "stmt_list";
+	}
+	| { 
+		//$$ = new Statement();
+		//$$ = ast_dbg("empty stmt_list");
+	}
 		
 ;
-stmt : 
-	INTEGER  COLON  non_label_stmt  { $$ = ast_newNode3(ast_dbg($1),ast_dbg($2),$3);$$->debug = "stmt";}
-	|  
-	non_label_stmt					{ $$ = ast_newNode1($1);$$->debug = "stmt";}
+stmt: 
+	non_label_stmt { 
+		$$ = (Statement *)$1;
+		//$$ = ast_newNode1($1);$$->debug = "stmt";
+	}
+	//| INTEGER  COLON  non_label_stmt { 
+		//$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),$3);$$->debug = "stmt";
+	//}
 ;
 non_label_stmt : 
-	assign_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
-	| proc_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}	
-	| compound_stmt 				{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
-	| if_stmt 						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}		
-	| repeat_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
-	| while_stmt					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}	
-	| for_stmt						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
-	| case_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}	
-	| goto_stmt						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
+	assign_stmt { 
+		//$$ = ast_newNode1($1);$$->debug = "non_label_stmt";
+		$$ = (Statement *)$1;
+	}
+//	| proc_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}	
+//	| compound_stmt 				{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
+//	| if_stmt 						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}		
+//	| repeat_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
+//	| while_stmt					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}	
+//	| for_stmt						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
+//	| case_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}	
+//	| goto_stmt						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
 ;
 assign_stmt :  
-	ID  ASSIGN  expression 						{ $$ = ast_newNode3(ast_dbg($1),ast_dbg($2),$3);$$->debug = "assign_stmt";}
-	| ID LB expression RB ASSIGN expression     { $$ = ast_newNode6(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4),ast_dbg($5),$6);$$->debug = "assign_stmt";} 
-	| ID  DOT  ID  ASSIGN  expression           { $$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),ast_dbg($4),$5);$$->debug = "assign_stmt";} 
+	ID  ASSIGN  expression { 
+		$$ = new AssignmentStmt(new Identifier($1), $3);
+		//$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),$3);$$->debug = "assign_stmt";
+	}
+	//| ID LB expression RB ASSIGN expression     { $$ = ast_newNode6(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4),ast_dbg($5),$6);$$->debug = "assign_stmt";} 
+	//| ID  DOT  ID  ASSIGN  expression           { $$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),ast_dbg($4),$5);$$->debug = "assign_stmt";} 
 ;
+
 proc_stmt : 
 	ID                   						{ $$ = ast_dbg($1);$$->debug = "proc_stmt";}
 	|  ID  LP  args_list  RP 					{ $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "proc_stmt";}
@@ -357,41 +462,64 @@ case_expr :
 goto_stmt : 
 	GOTO  INTEGER 								{$$ = ast_newNode2(ast_dbg($1),ast_dbg($2));$$->debug = "goto_stmt";}
 ;
-expression_list : 
+
+expression_list: 
 	expression_list  COMMA  expression   		{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression_list";}
 	|  expression 								{$$ = ast_newNode1($1);$$->debug = "expression_list";}
-expression : 
-	expression  GE  expr  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
-	|  expression  GT  expr  					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
-	|  expression  LE  expr 					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
-    |  expression  LT  expr  					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
-	|  expression  EQUAL  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
-	|  expression  UNEQUAL  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
-	|  expr 									{$$ = ast_newNode1($1);$$->debug = "expression";}
+
+expression: 
+	expr {
+		$$ = $1;
+		//$$ = ast_newNode1($1);$$->debug = "expression";
+	}
+//	|  expression  GE  expr  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
+//	|  expression  GT  expr  					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
+//	|  expression  LE  expr 					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
+//    |  expression  LT  expr  					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
+//	|  expression  EQUAL  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
+//	|  expression  UNEQUAL  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}	
 ;
-expr : 
-	expr  PLUS  term  							{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expr";}
-	|  expr  MINUS  term  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expr";}	
-	|  expr  OR  term  							{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expr";}
-	|  term 									{$$ = ast_newNode1($1);$$->debug = "expr";}
+
+expr: 
+	expr  PLUS  term {
+		$$ = new BinaryOperator($1, BinaryOperator::OpType::plus, $3);
+		//$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expr";
+	}
+//	|  expr  MINUS  term  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expr";}	
+//	|  expr  OR  term  							{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expr";}
+	|  term {
+		$$ = $1;
+		//$$ = ast_newNode1($1);$$->debug = "expr";
+	}
 ;
-term : 
-	term  MUL  factor  							{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
-	|  term  DIV  factor  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
-	|  term  MOD  factor 						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
- 	|  term  AND  factor  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
-	|  factor 									{$$ = ast_newNode1($1);$$->debug = "term";}
+
+term: 
+	factor {
+		$$ = $1;
+		//$$ = ast_newNode1($1);$$->debug = "term";
+	}
+//	|  term  MUL  factor  							{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
+//	|  term  DIV  factor  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
+//	|  term  MOD  factor 						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
+// 	|  term  AND  factor  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
 ;
-factor : 
-	NAME  										{$$ = ast_newNode1(ast_dbg($1));$$->debug = "factor";}
-	|  NAME  LP  args_list  RP  				{$$ = ast_newNode1(ast_dbg($1));$$->debug = "factor";}
-	|  SYS_FUNCT SYS_FUNCT  LP  args_list  RP  	{$$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),$4,ast_dbg($5));$$->debug = "factor";}
-	|  const_value  							{$$ = ast_newNode1($1);$$->debug = "factor";}	
-	|  LP  expression  RP 						{$$ = ast_newNode3(ast_dbg($1),$2,ast_dbg($3));$$->debug = "factor";}
-	|  NOT  factor  							{$$ = ast_newNode2(ast_dbg($1),$2);$$->debug = "factor";}
-	|  MINUS  factor  							{$$ = ast_newNode2(ast_dbg($1),$2);$$->debug = "factor";}
-	|  ID  LB  expression  RB 					{$$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "factor";}
-	|  ID  DOT  ID 								{$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),ast_dbg($3));$$->debug = "factor";}
+
+factor: 
+	NAME {
+		$$ = new Identifier($1);
+		//$$ = ast_newNode1(ast_dbg($1));$$->debug = "factor";
+	}
+//	|  NAME  LP  args_list  RP  				{$$ = ast_newNode1(ast_dbg($1));$$->debug = "factor";}
+//	|  SYS_FUNCT SYS_FUNCT  LP  args_list  RP  	{$$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),$4,ast_dbg($5));$$->debug = "factor";}
+	|  const_value {
+		$$ = (Expression *)$1;
+		//$$ = ast_newNode1($1);$$->debug = "factor";
+	};
+//	|  LP  expression  RP 						{$$ = ast_newNode3(ast_dbg($1),$2,ast_dbg($3));$$->debug = "factor";}
+//	|  NOT  factor  							{$$ = ast_newNode2(ast_dbg($1),$2);$$->debug = "factor";}
+//	|  MINUS  factor  							{$$ = ast_newNode2(ast_dbg($1),$2);$$->debug = "factor";}
+//	|  ID  LB  expression  RB 					{$$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "factor";}
+//	|  ID  DOT  ID 								{$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),ast_dbg($3));$$->debug = "factor";}
 ;
 args_list : 
 	args_list  COMMA  expression  				{$$ =ast_newNode3($1,ast_dbg($2),$3);$$->debug = "args_list";}
