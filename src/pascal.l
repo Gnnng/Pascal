@@ -12,8 +12,8 @@
 %}
 %%
 "="      { YYLVAL_DEBUG return EQUAL; }
-"<"      { YYLVAL_DEBUG return LT; }
-"<="     { YYLVAL_DEBUG return LE; }
+"<"      { YYLVAL_DEBUG return LTHAN; }
+"<="     { YYLVAL_DEBUG return LEQU; }
 ">"      { YYLVAL_DEBUG return GT; }
 ">="     { YYLVAL_DEBUG return GE; }
 "<>"     { YYLVAL_DEBUG return UNEQUAL; }
@@ -21,8 +21,8 @@
 "-"      { YYLVAL_DEBUG return MINUS; }
 "*"      { YYLVAL_DEBUG return MUL; }
 "/"|"div"      { YYLVAL_DEBUG return DIV; }		
-")"      { YYLVAL_DEBUG return RP; }
-"("      { YYLVAL_DEBUG return LP; }
+")"      { YYLVAL_DEBUG return RIGHTP; }
+"("      { YYLVAL_DEBUG return LEFTP; }
 "["		 { YYLVAL_DEBUG return LB; }
 "]"      { YYLVAL_DEBUG return RB; }
 ":="     { YYLVAL_DEBUG return ASSIGN; }
@@ -62,7 +62,7 @@
 "false"|"maxint"|"true"   { YYLVAL_DEBUG return SYS_CON; }
 "abs"|"chr"|"ord"|"pred"|"sqr"|"succ"    { YYLVAL_DEBUG return SYS_FUNCT; }
 "boolean"|"char"|"integer"|"real"|"longint"    {YYLVAL_DEBUG return SYS_TYPE;}
-([_a-zA-Z])([_a-zA-Z0-9])* { yylval.debug = strdup(yytext);return ID; }
+([_a-zA-Z])([_a-zA-Z0-9])* { yylval.debug = strdup(yytext);return IDD; }
 [ \n\t]+
 .		{ printf("Invalid character\n");} 		
 %%

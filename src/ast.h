@@ -7,7 +7,12 @@
 #include <map>
 #include <vector>
 
+//used forward-declaration to deal with cross-reference issue
+class CodeGenContext;
+
 // Delcaration
+namespace ast {
+
 class LabelDecl;
 class ConstDecl;
 class TypeDecl;
@@ -19,7 +24,7 @@ class Identifier;
 class Node {
 public:
 	virtual ~Node() {}
-	virtual llvm::Value *Codegen() {}
+	virtual llvm::Value *CodeGen(CodeGenContext& context) = 0;
 	//virtual void print();
 
 	std::string debug;
@@ -36,14 +41,14 @@ public:
 
 	Program() {};
 	virtual ~Program() {};
-	virtual llvm::Value *Codegen();
+	virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
 class Expression : public Node {
 public:
 	Expression() {};
 	virtual ~Expression() {};
-	virtual llvm::Value *Codegen();
+	virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
 class Statement : public Node {
@@ -51,7 +56,7 @@ public:
 	Statement() {};
 	virtual ~Statement() {};
 	std::vector<Statement *> stmt_list;
-	virtual llvm::Value *Codegen() {}
+	virtual llvm::Value *CodeGen(CodeGenContext& context) {}
 };
 
 class LabelDecl : public Statement {
@@ -78,7 +83,7 @@ public:
 		real
 	};
 	TypeName sys_type_name;
-	virtual llvm::Value* Codegen();
+	virtual llvm::Value* CodeGen(CodeGenContext& context);
 };
 
 class VarDecl : public Statement {
@@ -95,7 +100,7 @@ public:
 	inline void addVar(VarDecl* v) {
 		// add those variables 
 	}
-	virtual llvm::Value* Codegen();
+	virtual llvm::Value* CodeGen(CodeGenContext& context);
 };
 
 class FuncDecl : public Statement {
@@ -111,14 +116,10 @@ class IntegerType : public Expression {
 public:
 	int val;
 
-	IntegerType(int val);// : val(val) {}
+	IntegerType(int val): val(val) {}
 	virtual ~IntegerType() {}
-	virtual llvm::Value *Codegen();
+	virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
-
-inline IntegerType::IntegerType(int val) : val(val) {
-
-}
 
 class RealType : public Expression {
 public:
@@ -126,7 +127,7 @@ public:
 
 	RealType(float val) : val(val) {}
 	virtual ~RealType() {}
-	virtual llvm::Value *Codegen();
+	virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
 class Identifier : public Expression {
@@ -138,7 +139,7 @@ public:
 		name = *(new std::string(name));
 	}
 //	virtual ~Identifier() {}
-	virtual llvm::Value *Codegen();
+	virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
 class MethodCall : public Expression {
@@ -146,7 +147,7 @@ class MethodCall : public Expression {
 	std::vector<Node *> args;
 	MethodCall(const std::string &callee, std::vector<Node *> &args);
 	virtual ~MethodCall() {}
-	virtual llvm::Value *Codegen() {}
+	virtual llvm::Value *CodeGen(CodeGenContext& context) {}
 };
 
 class BinaryOperator : public Expression {
@@ -168,7 +169,7 @@ public:
 	virtual ~BinaryOperator() {}
 	Expression *op1, *op2;
 	OpType op;
-	virtual llvm::Value *Codegen();
+	virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
 class AssignmentStmt : public Expression {
@@ -177,10 +178,12 @@ public:
 	Expression* rhs;
 	AssignmentStmt(Identifier* lhs, Expression* rhs) : lhs(lhs), rhs(rhs) {}
 	virtual ~AssignmentStmt() {}
-	virtual llvm::Value *Codegen();
+	virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
 // Utility functions
-llvm::Value *Error(const char *str);
+
+// namespace ast end
+}
 
 #endif

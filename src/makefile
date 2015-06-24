@@ -2,7 +2,7 @@ NAME = pascal
 
 LLVM_CONFIG = /usr/local/opt/llvm/bin/llvm-config
 FLAGS = `$(LLVM_CONFIG) --cxxflags --ldflags --libs --system-libs` 
-OBJS = parser.o tokenizer.o ast.o utils.o
+OBJS = parser.o tokenizer.o ast.o utils.o main.o CodeGenContext.o
 
 all: $(NAME)
 
@@ -20,6 +20,12 @@ ast.o: ast.h ast.cpp
 utils.o: utils.h utils.c
 	g++ -c utils.c -o utils.o $(FLAGS)
 
+main.o: main.cpp
+	g++ -c main.cpp -o main.o $(FLAGS)
+
+CodeGenContext.o: CodeGenContext.h CodeGenContext.cpp
+	g++ -c CodeGenContext.cpp -o CodeGenContext.o $(FLAGS)
+	
 $(NAME): $(OBJS)
 	g++ $(OBJS) -o pascal $(FLAGS)
 
@@ -28,4 +34,4 @@ debug:
 	bison -d -o parser.cpp ${NAME}.y -v
 
 clean:
-	-rm parser.output *.o parser.cpp parser.hpp tokenizer.cpp
+	rm -f parser.output *.o parser.cpp parser.hpp tokenizer.cpp

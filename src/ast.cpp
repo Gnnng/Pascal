@@ -7,33 +7,28 @@
 #include <map>
 
 using namespace std;
+
 // global variables 
 
-static llvm::Module *TheModule;
-static llvm::IRBuilder<> Builder(llvm::getGlobalContext());
-static map<string, llvm::Value*> NamedValues;
-
-// utils functions
-llvm::Value* Error(const char *str) {
-	Error(str);
-	return 0;
-}
+//static llvm::Module *TheModule;
+//static llvm::IRBuilder<> Builder(llvm::getGlobalContext());
+//static map<string, llvm::Value*> NamedValues;
 
 // Code Gen section
-llvm::Value* Identifier::Codegen() {}
+llvm::Value* ast::Identifier::CodeGen(CodeGenContext& context) {}
 
-llvm::Value* IntegerType::Codegen() {}
+llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {}
 
-llvm::Value* BinaryOperator::Codegen() {}
+llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {}
 
-llvm::Value* AssignmentStmt::Codegen() {}
+llvm::Value* ast::AssignmentStmt::CodeGen(CodeGenContext& context) {}
 
-llvm::Value* VarDecl::Codegen() {}
+llvm::Value* ast::VarDecl::CodeGen(CodeGenContext& context) {}
 
-llvm::Value* Program::Codegen() {}
+llvm::Value* ast::Program::CodeGen(CodeGenContext& context) {}
 
-llvm::Value* TypeDecl::Codegen() {}
+llvm::Value* ast::TypeDecl::CodeGen(CodeGenContext& context) {}
 
-llvm::Value* RealType::Codegen() {}
+llvm::Value* ast::RealType::CodeGen(CodeGenContext& context) {}
 
-llvm::Value* Expression::Codegen() {}
+llvm::Value* ast::Expression::CodeGen(CodeGenContext& context) {}
