@@ -1,37 +1,37 @@
 NAME = pascal
 
 LLVM_CONFIG = /usr/local/opt/llvm/bin/llvm-config
-FLAGS = `$(LLVM_CONFIG) --cxxflags --ldflags --libs --system-libs` 
+
+NO_WARNING =  -Wno-return-type \
+	-Wno-c++11-compat-deprecated-writable-strings \
+	-Wno-deprecated-register \
+
+CXXFLAGS = `$(LLVM_CONFIG) --cppflags` -std=c++11 $(NO_WARNING)
+LDFLAGS = `$(LLVM_CONFIG) --ldflags`
+LIBS = `$(LLVM_CONFIG) --libs --system-libs`
+
+# FLAGS = `$(LLVM_CONFIG) --cxxflags --ldflags --libs --system-libs` 
 OBJS = parser.o tokenizer.o ast.o utils.o main.o CodeGenContext.o
 
 all: $(NAME)
 
-parser.o: ${NAME}.y
+parser.cpp: ${NAME}.y
 	bison -d -o parser.cpp ${NAME}.y
-	g++ -c parser.cpp -o parser.o $(FLAGS)
 
-tokenizer.o: ${NAME}.l
+parser.hpp: parser.cpp
+
+tokenizer.cpp: ${NAME}.l
 	flex -o tokenizer.cpp ${NAME}.l
-	g++ -c tokenizer.cpp -o tokenizer.o $(FLAGS)
 
-ast.o: ast.h ast.cpp
-	g++ -c ast.cpp -o ast.o $(FLAGS)
+%.o: %.cpp
+	@g++ -c $(CXXFLAGS) -o $@ $<
 
-utils.o: utils.h utils.c
-	g++ -c utils.c -o utils.o $(FLAGS)
-
-main.o: main.cpp
-	g++ -c main.cpp -o main.o $(FLAGS)
-
-CodeGenContext.o: CodeGenContext.h CodeGenContext.cpp
-	g++ -c CodeGenContext.cpp -o CodeGenContext.o $(FLAGS)
-	
 $(NAME): $(OBJS)
-	g++ $(OBJS) -o pascal $(FLAGS)
+	g++ -o $@ $(OBJS) $(LIBS) $(LDFLAGS)
 
 # make debug - check the bison output report
 debug:
 	bison -d -o parser.cpp ${NAME}.y -v
 
 clean:
-	rm -f parser.output *.o parser.cpp parser.hpp tokenizer.cpp
+	@rm -f parser.output *.o parser.cpp parser.hpp tokenizer.cpp

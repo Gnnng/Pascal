@@ -14,8 +14,9 @@ void CodeGenContext::generateCode(ast::Program& root)
 	/* Create the top level interpreter function to call as entry */
 	std::vector<Type*> argTypes;
 	FunctionType *ftype = FunctionType::get(Type::getVoidTy(getGlobalContext()), makeArrayRef(argTypes), false);
-	mainFunction = Function::Create(ftype, GlobalValue::InternalLinkage, "main", module);
-	BasicBlock *bblock = BasicBlock::Create(getGlobalContext(), "entry", mainFunction, 0);
+	// change GlobalValue::InternalLinkage into ExternalLinkage
+	mainFunction = Function::Create(ftype, GlobalValue::ExternalLinkage, "main", module);
+	BasicBlock *bblock = BasicBlock::Create(getGlobalContext(), "entrypoint", mainFunction, 0);
 	
 	/* Push a new variable/block context */
 	pushBlock(bblock);
@@ -29,7 +30,10 @@ void CodeGenContext::generateCode(ast::Program& root)
 	std::cout << "Code is generated.\n";
 	PassManager pm;
 	pm.add(createPrintModulePass(outs()));
-	pm.run(*module);
+	//pm.run(*module);
+
+    // write IR to stderr
+    module->dump();
 }
 
 /* Executes the AST by running the main function */

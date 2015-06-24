@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <iostream>
+#include <string>
 
 #include "ast.h"
 #include "utils.h"
@@ -144,9 +145,10 @@ routine:
 	// TODO routine_head routine_body
 	routine_head routine_body {
 		$$ = new ast::Program();
+		$$->debug = "ast root";
 		$$->var_part = $1->var_part;
-		$$->stmt_list = $2;
-		delete $1;
+		$$->stmt_list = $2->stmt_list;
+		$$->print_node("", true, true);
 		//$$ = ast_newNode2($1,$2);$$->debug = "routine";
 	}
 ;
@@ -160,12 +162,12 @@ routine_head:
 	//label_part const_part type_part var_part routine_part { 
 	var_part {
 		$$ = new ast::Program();
-		$$->debug = "Routine top level";
+		$$->debug = "Routine head";
 		//$$->label_part = $1;
 		//$$->const_part = $2;
 		//$$->type_part = $3;
 		$$->var_part = $1;
-		cerr << "routine_head parsed" << endl;
+		//cerr << "routine_head parsed" << endl;
 		//TODO: route_part's ast node not implemented
 		//$$->routine_part = $5
 
@@ -198,6 +200,7 @@ const_expr_list:
 const_value:
 	INTEGER { 
 		$$ = new ast::IntegerType(atoi($1));
+		$$->debug = $1;
 	}
 //	| REAL 						{ $$ = ast_dbg($1);}
 //	| CHAR 						{ $$ = ast_dbg($1);}
@@ -263,12 +266,15 @@ field_decl:
 name_list:
 	name_list COMMA IDD { 
 		//$$ = ast_newNode3($1, ast_dbg($2), ast_dbg($3));$$->debug = "name_list";
-		$$ = $1;
 		$1->name_list.push_back(new ast::Identifier($3));
+		//std::cout << "NAME_LIST SIZE " << $1->name_list.size() << std::endl;
+		//$1->print_node("NAME_LIST ", true, true);
+		$$ = $1;
 	}
 	| IDD {
-		$$ = new ast::Identifier($1);
-		$$->debug = "name list start"
+		$$ = new ast::Identifier("Not a id, just a name_list");
+		$$->name_list.push_back(new ast::Identifier($1));
+		$$->debug = "name list start";
 		//$$ = ast_newNode1(ast_dbg($1));$$->debug = "name_list";
 	}
 ;
@@ -289,7 +295,7 @@ var_part:
 var_decl_list:
 	var_decl_list var_decl 		{ 
 		$$ = $1;
-		$1->var_decl_list.push_back((ast::VarDecl *)$1);
+		$1->var_decl_list.push_back((ast::VarDecl *)$2);
 		//$$ = ast_newNode2($1, $2);
 		//$$->debug = "var_decl_list";
 	}
@@ -304,7 +310,8 @@ var_decl_list:
 var_decl:
 	name_list COLON type_decl SEMI { 
 		$$ = new ast::VarDecl();
-		$$->names = $1;
+		$$->name = $1;
+		//$1->print_node("PRINT IN YACC ", true, true);
 		$$->type = $3;
 		$$->debug = "declaration item";
 		//$$ = ast_newNode4($1, ast_dbg($2), $3, ast_dbg($4));$$->debug = "var_decl";
@@ -362,7 +369,7 @@ val_para_list:
 routine_body:  
 	compound_stmt { 
 		$$ = $1;
-		cerr << "routine_body parsed" << endl;
+		//cerr << "routine_body parsed" << endl;
 		//$$ = ast_newNode1($1);$$->debug = "routine_body";
 	}
 ;
@@ -384,6 +391,7 @@ stmt_list :
 	}
 	| { 
 		$$ = new ast::Statement();
+		$$->debug = "stmt_list_start";
 		//$$ = ast_dbg("empty stmt_list");
 	}
 		
@@ -414,6 +422,9 @@ non_label_stmt :
 assign_stmt :  
 	IDD  ASSIGN  expression { 
 		$$ = new ast::AssignmentStmt(new ast::Identifier($1), $3);
+		$$->debug += $1;
+		$$->debug += " = ";
+		$$->debug += $3->debug;
 		//$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),$3);$$->debug = "assign_stmt";
 	}
 	//| ID LB expression RB ASSIGN expression     { $$ = ast_newNode6(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4),ast_dbg($5),$6);$$->debug = "assign_stmt";} 
@@ -488,6 +499,7 @@ expression:
 expr: 
 	expr  PLUS  term {
 		$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::plus, $3);
+		$$->debug = "PLUS";
 		//$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expr";
 	}
 //	|  expr  MINUS  term  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expr";}	
@@ -518,6 +530,7 @@ factor:
 //	|  SYS_FUNCT SYS_FUNCT  LEFTP  args_list  RIGHTP  	{$$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),$4,ast_dbg($5));$$->debug = "factor";}
 	|  const_value {
 		$$ = (ast::Expression *)$1;
+		std::cout << "const_value parsed: " << $$->debug << std::endl;
 		//$$ = ast_newNode1($1);$$->debug = "factor";
 	};
 //	|  LEFTP  expression  RIGHTP 						{$$ = ast_newNode3(ast_dbg($1),$2,ast_dbg($3));$$->debug = "factor";}
