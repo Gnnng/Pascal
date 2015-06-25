@@ -89,7 +89,7 @@ llvm::Value* ast::Program::CodeGen(CodeGenContext& context) {
         last = var_decl->CodeGen(context);
     }
     // deal with program statements
-    for(auto stmt : this->stmt_list) {
+    for(auto stmt : this->routine_body->stmt_list) {
         std::cout << "Generating code for " << typeid(stmt).name() << std::endl;
         last = stmt->CodeGen(context);
     }

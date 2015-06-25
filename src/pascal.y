@@ -145,9 +145,11 @@ routine:
 	// TODO routine_head routine_body
 	routine_head routine_body {
 		$$ = new ast::Program();
-		$$->debug = "ast root";
+		$$->debug = "AST root";
+		$$->dummy = false; // when not a dummy, actually no need to specify
+
 		$$->var_part = $1->var_part;
-		$$->stmt_list = $2->stmt_list;
+		$$->routine_body = $2;
 		$$->print_node("", true, true);
 		//$$ = ast_newNode2($1,$2);$$->debug = "routine";
 	}
@@ -162,6 +164,7 @@ routine_head:
 	//label_part const_part type_part var_part routine_part { 
 	var_part {
 		$$ = new ast::Program();
+		$$->dummy = true;
 		$$->debug = "Routine head";
 		//$$->label_part = $1;
 		//$$->const_part = $2;
@@ -274,7 +277,6 @@ name_list:
 	| IDD {
 		$$ = new ast::Identifier("Not a id, just a name_list");
 		$$->name_list.push_back(new ast::Identifier($1));
-		$$->debug = "name list start";
 		//$$ = ast_newNode1(ast_dbg($1));$$->debug = "name_list";
 	}
 ;
@@ -301,7 +303,7 @@ var_decl_list:
 	}
 	| var_decl 					{ 
 		$$ = new ast::VarDecl();
-		$$->debug = "var start";
+		$$->dummy = true;
 		$$->var_decl_list.push_back((ast::VarDecl *)$1);
 		//$$ = ast_newNode1($1);$$->debug = "var_decl_list"; 
 	}
@@ -313,7 +315,6 @@ var_decl:
 		$$->name = $1;
 		//$1->print_node("PRINT IN YACC ", true, true);
 		$$->type = $3;
-		$$->debug = "declaration item";
 		//$$ = ast_newNode4($1, ast_dbg($2), $3, ast_dbg($4));$$->debug = "var_decl";
 	}
 ;
@@ -391,7 +392,7 @@ stmt_list :
 	}
 	| { 
 		$$ = new ast::Statement();
-		$$->debug = "stmt_list_start";
+		$$->debug = "stmt_list";
 		//$$ = ast_dbg("empty stmt_list");
 	}
 		

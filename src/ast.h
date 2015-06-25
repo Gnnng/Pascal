@@ -35,7 +35,7 @@ public:
 		std::string ch_tailStr = "    ";
 		std::string ch_branchStr = "|   ";
 
-		std::cout << (root ? prefix : (prefix + (tail ? tailStr : branchStr))) << this->debug << std::endl;
+		std::cout << (root ? prefix : (prefix + (tail ? tailStr : branchStr))) << (this->dummy ? "dummy node" : this->debug) << std::endl;
 
 		auto children_list = this->getChildren();
 		auto ch_prefix = tail ? prefix + ch_tailStr : prefix + ch_branchStr;
@@ -45,16 +45,19 @@ public:
 	}
 
 	std::string debug;
+	bool dummy;
 };
 
 class Program : public Node {
 public:
-	LabelDecl* lable_part;
-	ConstDecl* const_part;
-	TypeDecl* type_part;
-	VarDecl* var_part;
+	LabelDecl* 	lable_part;
+	ConstDecl* 	const_part;
+	TypeDecl* 	type_part;
+	VarDecl* 	var_part;
 
-	std::vector<Statement*> stmt_list;
+	Statement* 	routine_body;
+
+	// std::vector<Statement*> stmt_list;
 
 	Program() {};
 	virtual ~Program() {};
@@ -62,7 +65,8 @@ public:
 	virtual std::vector<Node *> getChildren() { 
 		std::vector<Node *> list;
 		list.push_back((Node *)var_part);
-        for(auto i: stmt_list) list.push_back((Node *)i);
+		list.push_back((Node *)routine_body);
+        //for(auto i: routine_body->stmt_list) list.push_back((Node *)i);
 		return list;
 	}
 };
