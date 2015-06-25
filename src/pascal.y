@@ -21,6 +21,7 @@ ast::Node* ast_root;
     ast::Statement* 		ast_Statement;
     ast::Expression* 		ast_Expression;
     ast::Program* 			ast_Program;
+    ast::Routine* 			ast_Routine;
     ast::TypeDecl* 			ast_TypeDecl;
     ast::VarDecl* 			ast_VarDecl;
     ast::Identifier* 		ast_Identifier;
@@ -64,9 +65,9 @@ ast::Node* ast_root;
 // default type is ast node
 %type <ast_Node> sub_routine label_part const_part
 %type <ast_Node> const_expr_list const_value 
-%type <ast_Node> procedure_head para_type_list var_para_list val_para_list
-%type <ast_Node> para_decl_list parameters procedure_decl function_decl function_head
-%type <ast_Node> routine_part field_decl field_decl_list
+%type <ast_Node> procedure_head para_type_list
+%type <ast_Node> procedure_decl function_decl function_head
+%type <ast_Node> field_decl field_decl_list
 %type <ast_Node> record_type_decl array_type_decl type_definition 
 %type <ast_Node> proc_stmt if_stmt else_clause repeat_stmt while_stmt for_stmt
 %type <ast_Node> direction case_stmt case_expr_list case_expr goto_stmt expression_list
@@ -74,11 +75,12 @@ ast::Node* ast_root;
 
 %type <ast_Program> 		program program_head routine routine_head 
 %type <ast_TypeDecl> 		type_part type_decl type_decl_list simple_type_decl 
-%type <ast_VarDecl> 		var_part var_decl_list var_decl
+%type <ast_VarDecl> 		var_part var_decl_list var_decl parameters para_decl_list
 %type <ast_Statement> 		routine_body compound_stmt stmt_list stmt non_label_stmt
 %type <ast_Identifier>		name_list
 %type <ast_AssignmentStmt> 	assign_stmt
 %type <ast_Expression> 		expression expr term factor 
+%type <ast_Routine> 		routine_part
 
 %type <debug> PROGRAM IDD DOT NAME
 %type <debug> EQUAL
@@ -156,7 +158,16 @@ routine:
 ;
 
 sub_routine:
-	routine_head routine_body{ $$ = ast_newNode2($1,$2);$$->debug = "sub_routine";}
+	routine_head routine_body { 
+		$$ = new ast::Routine();
+
+		$$->dummy = true;
+		$$->debug = "New Routine";
+
+		$$->var_part = $1->var_part;
+		$$->routine_body = $2;
+		//$$ = ast_newNode2($1,$2);$$->debug = "sub_routine";
+	}
 ;
 
 routine_head:
@@ -320,19 +331,39 @@ var_decl:
 ;
 
 routine_part:
-	routine_part function_decl  { $$ = ast_newNode2($1, $2);$$->debug = "routine_part";}
-	| routine_part procedure_decl 					{ $$ = ast_newNode2($1, $2);$$->debug = "routine_part";}
+	routine_part function_decl  { $$ = $1; $1->routine_list.push_back($2); }
+//	| routine_part procedure_decl 					{ $$ = ast_newNode2($1, $2);$$->debug = "routine_part";}
 //	| procedure_decl			{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
 //	| function_decl				{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
-	| 							{ $$ = ast_dbg("empty routine_part");}
+	| 							{ $$ = new ast::Routine(); $$->debug = "routine_list"; }
 ;
 
 function_decl:
-	function_head SEMI sub_routine SEMI { $$ = ast_newNode4($1, ast_dbg($2), $3, ast_dbg($4));$$->debug = "function_decl";}
+	function_head SEMI sub_routine SEMI { 
+		$$ = new ast::Routine();
+
+		$$->routine_type = ast::Routine::RoutineType::function;
+
+		$$->routine_name = $1->routine_name;
+		$$->argument_list = $1->argument_list;
+		$$->return_type = $1->return_type;
+
+		$$->var_part = $3->var_part;
+		$$->routine_body = $3->routine_body;
+		//$$ = ast_newNode4($1, ast_dbg($2), $3, ast_dbg($4));$$->debug = "function_decl";
+	}
 ;
 
 function_head:
-	FUNCTION IDD parameters COLON simple_type_decl 	{ $$ = ast_newNode5(ast_dbg($1), ast_dbg($2), $3, ast_dbg($4), $5); $$->debug = "function_head";}
+	FUNCTION IDD parameters COLON simple_type_decl { 
+		$$ = new ast::Routine();
+		
+		$$->dummy = true;
+		$$->routine_name = new ast::Identifier($2);
+		$$->argument_list = $3->argument_list;
+		$$->return_type = $5;
+		//$$ = ast_newNode5(ast_dbg($1), ast_dbg($2), $3, ast_dbg($4), $5); $$->debug = "function_head";
+	}
 ;
 
 procedure_decl:
@@ -344,27 +375,55 @@ procedure_head:
 ;
 
 parameters:
-	LEFTP para_decl_list RIGHTP 							{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "parameters";}
-	|  												{ $$ = ast_dbg("empty parameters"); }
+	LEFTP para_decl_list RIGHTP { 
+		$$ = $2;
+		//$$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "parameters";
+	}
+	| { 
+		$$ = new ast::VarDecl();
+		$$->debug = "empty parameters";
+		//$$ = ast_dbg("empty parameters"); 
+	}
 ;
 
 para_decl_list:
-	para_decl_list SEMI para_type_list 				{ $$ = ast_newNode3($1, ast_dbg($2), $3);$$->debug = "para_decl_list";}
-	| para_type_list								{ $$ = ast_newNode1($1);$$->debug = "para_decl_list";}
+	para_decl_list SEMI para_type_list { 
+		$$ = $1;
+		$1->var_decl_list.push_back($3);
+		//$$ = ast_newNode3($1, ast_dbg($2), $3);$$->debug = "para_decl_list";
+	}
+	| para_type_list { 
+		$$ = newe ast::VarDecl();
+		$$->var_decl_list.push_back($1);
+
+	}
 ;
 
 para_type_list:
-	var_para_list COLON simple_type_decl 			{ $$ = ast_newNode3($1, ast_dbg($2), $3); $$->debug = "para_type_list";}
-	| val_para_list COLON simple_type_decl 			{ $$ = ast_newNode3($1, ast_dbg($2), $3); $$->debug = "para_type_list";}
+	VAR name_list COLON simple_type_decl {
+		$$ = new ast::VarDecl();
+		$$->name = $2;
+		//$1->print_node("PRINT IN YACC ", true, true);
+		$$->type = $4;
+		//$$ = ast_newNode3($1, ast_dbg($2), $3); $$->debug = "para_type_list";
+	}
+	| name_list COLON simple_type_decl {
+		$$ = new ast::VarDecl();
+		$$->name = $1;
+		//$1->print_node("PRINT IN YACC ", true, true);
+		$$->type = $3;
+		//$$ = ast_newNode3($1, ast_dbg($2), $3); $$->debug = "para_type_list";
+	}
 ;
 
-var_para_list:
-	VAR name_list 				{ $$ = ast_newNode2(ast_dbg($1), $2); $$->debug = "var_para_list";}
-;
-
-val_para_list:
-	name_list 					{ $$ = ast_newNode1($1); $$->debug = "val_para_list";}
-;
+//
+//var_para_list:
+//	VAR name_list 				{ $$ = ast_newNode2(ast_dbg($1), $2); $$->debug = "var_para_list";}
+//;
+//
+//val_para_list:
+//	name_list 					{ $$ = ast_newNode1($1); $$->debug = "val_para_list";}
+//;
 
 // boundary
 routine_body:  

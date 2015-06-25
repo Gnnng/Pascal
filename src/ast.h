@@ -20,6 +20,7 @@ class TypeDecl;
 class VarDecl;
 class Statement;
 class Identifier;
+class Routine;
 
 // pure virtual class for all ast nodes
 class Node {
@@ -54,10 +55,9 @@ public:
 	ConstDecl* 	const_part;
 	TypeDecl* 	type_part;
 	VarDecl* 	var_part;
+	Routine* 	routine_part;
 
 	Statement* 	routine_body;
-
-	// std::vector<Statement*> stmt_list;
 
 	Program() {};
 	virtual ~Program() {};
@@ -66,9 +66,33 @@ public:
 		std::vector<Node *> list;
 		list.push_back((Node *)var_part);
 		list.push_back((Node *)routine_body);
-        //for(auto i: routine_body->stmt_list) list.push_back((Node *)i);
 		return list;
 	}
+};
+
+class Routine : public Program {
+public:
+	enum class RoutineType {
+		function,
+		procedure,
+		error,
+	};
+
+	// necessary section
+	Identifier* routine_name;
+	TypeDecl* 	return_type;
+	// VarDecl* 	return_value;
+	std::vector<VarDecl *> argument_list;
+	RoutineType routine_type; // function or procedure 
+
+
+	// for dummy node usage
+	std::vector<Routine *> routine_list;
+
+	virtual ~Routine() {}
+	virtual llvm::Value *CodeGen(CodeGenContext& context);
+	bool isFunction() { return routine_type == RoutineType::function; }
+	bool isProcedure() { return routine_type == RoutineType::procedure; }
 };
 
 class Expression : public Node {
@@ -117,7 +141,9 @@ public:
 		real
 	};
 	TypeName sys_type_name;
-	static std::map<TypeName, std::string> getName;
+	static std::map<TypeName, std::string> mapToString;
+	
+	llvm::Type* toLLVMType();
 	virtual llvm::Value* CodeGen(CodeGenContext& context);
 };
 
@@ -126,7 +152,8 @@ class VarDecl : public Statement {
 public:
 	VarDecl() {};
 	virtual ~VarDecl() {};
-	// var_decl_list
+
+	// for dummy usage
 	std::vector<VarDecl *> var_decl_list;
 
 	// var_decl <- name_list COLON type_decl SEMI
@@ -135,6 +162,8 @@ public:
 	TypeDecl* type;
 
 	bool var_part;
+
+
 	virtual llvm::Value* CodeGen(CodeGenContext& context);
 	virtual std::vector<Node *> getChildren() { 
 		std::vector<Node *> list;
