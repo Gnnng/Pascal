@@ -11,11 +11,17 @@
 #include "CodeGenContext.h"
 using namespace std;
 
-// global variables 
+// static member
 
-//static llvm::Module *TheModule;
-//static llvm::IRBuilder<> Builder(llvm::getGlobalContext());
-//static map<string, llvm::Value*> NamedValues;
+// other definition
+llvm::Type* ast::TypeDecl::toLLVMType() {
+    this->init();    
+    switch(this->sys_name) {
+        case ast::TypeDecl::TypeName::integer: return llvm::Type::getInt32Ty(llvm::getGlobalContext()); break;
+        default: return llvm::Type::getVoidTy(llvm::getGlobalContext()); break;
+    }
+}
+
 
 // Code Gen section
 llvm::Value* ast::Identifier::CodeGen(CodeGenContext& context) {
@@ -51,27 +57,8 @@ llvm::Value* ast::AssignmentStmt::CodeGen(CodeGenContext& context) {
 }
 
 
-void ast::VarDecl::addVar(VarDecl* var_list) {
-	var_part = true;
-    // var_list->print_node("PRINT ADDVAR BEFORE ", true, true);
-	for(auto decl_i: var_list->var_decl_list) {
-		auto list = decl_i->name->name_list;
-        for(auto id_i: list) {
-            auto n = new VarDecl();
-            n->name = id_i;
-            n->type = decl_i->type;
-            n->debug = "VarDecl";
-            this->var_decl_list.push_back(n);
-            // std::cout << "Adding var " << n->name->name << std::endl;
-        }
-	}
-	// var_list->print_node("PRINT ADDVAR AFTER ", true, true);
-}
-
 llvm::Value* ast::VarDecl::CodeGen(CodeGenContext& context) {
-    std::cout 
-        << "Creating variable declaration " << ast::TypeDecl::mapToString[this->type->sys_type_name] << " " 
-        << this->name->name << std::endl;
+    std::cout << "Creating variable declaration " << this->name->name << std::endl;
     auto alloc = new llvm::AllocaInst(this->type->toLLVMType(), this->name->name.c_str(), context.currentBlock());
     context.locals()[this->name->name] = alloc;
     return alloc;
@@ -80,12 +67,12 @@ llvm::Value* ast::VarDecl::CodeGen(CodeGenContext& context) {
 llvm::Value* ast::Program::CodeGen(CodeGenContext& context) {
     llvm::Value* last = nullptr;
     // deal with variable declaration
-    for(auto var_decl: this->var_part->var_decl_list) {
+    for(auto var_decl: *(this->var_part)) {
         std::cout << "Generating code for " << typeid(var_decl).name() << std::endl;
         last = var_decl->CodeGen(context);
     }
     // deal with program statements
-    for(auto stmt : this->routine_body->stmt_list) {
+    for(auto stmt : *(this->var_part)) {
         std::cout << "Generating code for " << typeid(stmt).name() << std::endl;
         last = stmt->CodeGen(context);
     }
@@ -95,7 +82,7 @@ llvm::Value* ast::Program::CodeGen(CodeGenContext& context) {
 
 llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     std::vector<llvm::Type*> arg_types;
-    for(auto it : this->argument_list)
+    for(auto it : *(this->argument_list))
       arg_types.push_back(it->type->toLLVMType()); 
     auto f_type = llvm::FunctionType::get(this->return_type->toLLVMType(), llvm::makeArrayRef(arg_types), false);
     auto function = llvm::Function::Create(f_type, llvm::GlobalValue::InternalLinkage, this->routine_name->name.c_str(), context.module);
@@ -107,7 +94,7 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     // deal with arguments
     llvm::Value* arg_value;
     auto args_values = function->arg_begin();
-    for(auto arg : this->argument_list) {
+    for(auto arg : *(this->argument_list)) {
         arg->CodeGen(context);
         arg_value = args_values++;
         arg_value->setName(arg->name->name.c_str());
@@ -122,12 +109,12 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     }
         
     // deal with variable declaration
-    for(auto var_decl: this->var_part->var_decl_list) {
+    for(auto var_decl: *(this->var_part)) {
         std::cout << "Generating code for decl " << typeid(var_decl).name() << std::endl;
         var_decl->CodeGen(context);
     }
     // deal with program statements
-    for(auto stmt : this->routine_body->stmt_list) {
+    for(auto stmt : *(this->routine_list)) {
         std::cout << "Generating code for body " << typeid(stmt).name() << std::endl;
         stmt->CodeGen(context);
     }
@@ -141,18 +128,6 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     context.popBlock();
     std::cout << "Creating Routine" << std::endl;
     return function;
-}
-
-std::map<ast::TypeDecl::TypeName, std::string> ast::TypeDecl::mapToString = {
-		{ ast::TypeDecl::TypeName::integer, "integer"},
-		{ ast::TypeDecl::TypeName::real, "real"},
-		{ ast::TypeDecl::TypeName::error, "error"}
-};
-
-llvm::Type* ast::TypeDecl::toLLVMType() {
-    if (this->sys_type_name == ast::TypeDecl::TypeName::integer)
-        return llvm::Type::getInt32Ty(llvm::getGlobalContext());
-    return llvm::Type::getVoidTy(llvm::getGlobalContext());
 }
 
 llvm::Value* ast::TypeDecl::CodeGen(CodeGenContext& context) {}

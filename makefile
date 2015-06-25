@@ -3,7 +3,7 @@ LLC = /usr/local/opt/llvm/bin/llc
 all: compiler
 
 compiler:
-	$(MAKE) -C $(SRC_DIR) -j
+	$(MAKE) -C $(SRC_DIR)
 	mv $(SRC_DIR)/pascal .
 
 TEST_FILE = 
