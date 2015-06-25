@@ -71,8 +71,12 @@ llvm::Value* ast::Program::CodeGen(CodeGenContext& context) {
         std::cout << "Generating code for " << typeid(var_decl).name() << std::endl;
         last = var_decl->CodeGen(context);
     }
+    for(auto routine : *(this->routine_part)) {
+        std::cout << "Generating code for " << typeid(routine).name() << std::endl;
+        last = routine->CodeGen(context);
+    }
     // deal with program statements
-    for(auto stmt : *(this->var_part)) {
+    for(auto stmt : *(this->routine_body)) {
         std::cout << "Generating code for " << typeid(stmt).name() << std::endl;
         last = stmt->CodeGen(context);
     }
@@ -114,7 +118,7 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
         var_decl->CodeGen(context);
     }
     // deal with program statements
-    for(auto stmt : *(this->routine_list)) {
+    for(auto stmt : *(this->routine_body)) {
         std::cout << "Generating code for body " << typeid(stmt).name() << std::endl;
         stmt->CodeGen(context);
     }

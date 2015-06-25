@@ -7,6 +7,7 @@
 #include <map>
 #include <vector>
 #include <iostream>
+#include <sstream>
 
 //used forward-declaration to deal with cross-reference issue
 class CodeGenContext;
@@ -39,7 +40,7 @@ public:
         std::string branchStr = "├── ";
         std::string ch_tailStr = "    ";
         std::string ch_branchStr = "|   ";
-        std::cout << (root ? prefix : (prefix + (tail ? tailStr : branchStr))) << (this->debug) << std::endl;
+        std::cout << (root ? prefix : (prefix + (tail ? tailStr : branchStr))) << (this->toString()) << std::endl;
         auto children_list = this->getChildren();
         auto ch_prefix = tail ? prefix + ch_tailStr : prefix + ch_branchStr;
         for(size_t i = 0; i < children_list.size(); i++) {
@@ -49,6 +50,7 @@ public:
 
     virtual std::vector<Node *> getChildren() { return *(new std::vector<Node *>()); }
     virtual ~Node() {}
+    virtual std::string toString() = 0;
     virtual llvm::Value *CodeGen(CodeGenContext& context) = 0;
 };
 
@@ -71,10 +73,12 @@ public:
         routine_body(rb) {}
     virtual std::vector<Node *> getChildren() { 
         std::vector<Node *> list;
-        list.push_back((Node *)var_part);
-        list.push_back((Node *)routine_body);
+        for(auto i : *(var_part)) list.push_back((Node *)i);
+        for(auto i : *(routine_part)) list.push_back((Node *)i);
+        for(auto i : *(routine_body)) list.push_back((Node *)i);
         return list;
     }
+    virtual std::string toString() { return "Program start"; }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
@@ -84,7 +88,6 @@ public:
     Identifier*     routine_name;
     TypeDecl*       return_type;
     VarDeclList*    argument_list;
-    RoutineList*    routine_list;
     RoutineType     routine_type; // function or procedure 
 
     Routine(RoutineType rt, Identifier* rn, VarDeclList* vdl, TypeDecl* td) :
@@ -92,19 +95,30 @@ public:
         routine_name(rn),
         return_type(td),
         argument_list(vdl),
-        routine_list(nullptr),
+        // routine_list(nullptr),
         routine_type(rt) {}
     Routine(Routine* r, Program* p) : 
         Program(*p),
         routine_name(r->routine_name),
         return_type(r->return_type),
         argument_list(r->argument_list),
-        routine_list(r->routine_list),
+        // routine_list(r->routine_list),
         routine_type(r->routine_type) {}
 
     bool isFunction() { return routine_type == RoutineType::function; }
     bool isProcedure() { return routine_type == RoutineType::procedure; }
 
+    virtual std::vector<Node *> getChildren() { 
+        std::vector<Node *> list;
+        list.push_back((Node *)routine_name);
+        list.push_back((Node *)return_type);
+        for(auto i : *(argument_list)) list.push_back((Node *)i);
+        for(auto i : *(var_part)) list.push_back((Node *)i);
+        for(auto i : *(routine_part)) list.push_back((Node *)i);
+        for(auto i : *(routine_body)) list.push_back((Node *)i);
+        return list;
+    }
+    virtual std::string toString() { return "Routine start"; }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
@@ -117,13 +131,6 @@ class Statement : public Node {
 public:
     Statement() {};
 
-    StatementList stmt_list;
-    
-    virtual std::vector<Node *> getChildren() { 
-        std::vector<Node *> list;
-        for(auto i: stmt_list) list.push_back((Node *)i);
-        return list;
-    }
     virtual llvm::Value *CodeGen(CodeGenContext& context) {}
 };
 
@@ -154,11 +161,21 @@ public:
             if (raw_name == "integer") sys_name = TypeName::integer;
         }
     }
-    std::string toString() { return raw_name; }
+    
     llvm::Type* toLLVMType();
+    virtual std::string toString() { return raw_name; }
     virtual llvm::Value* CodeGen(CodeGenContext& context);
 };
 
+class Identifier : public Expression {
+public:
+    std::string         name;
+
+    Identifier(const std::string& name) : name(name) {}
+    Identifier(const char * ptr_s) : name(*(new std::string(ptr_s))) {}
+    virtual std::string toString() { return "Identifier: " + name; }
+    virtual llvm::Value *CodeGen(CodeGenContext& context);
+};
 
 class VarDecl : public Statement {
 public:
@@ -166,33 +183,15 @@ public:
     TypeDecl*       type;
 
     VarDecl(Identifier* name, TypeDecl* type) : name(name), type(type) {}
-
     virtual std::vector<Node *> getChildren() { 
         std::vector<Node *> list;
         list.push_back((Node *)name);
         list.push_back((Node *)type);
         return list;
     }
+    std::string toString() { return "VarDecl: " + name->toString() + "-" + type->toString(); }
     virtual llvm::Value* CodeGen(CodeGenContext& context);
 };
-
-// inline void ast::VarDecl::addVar(VarDecl* var_list) {
-//     var_part = true;
-//     // var_list->print_node("PRINT ADDVAR BEFORE ", true, true);
-//     for(auto decl_i: var_list->var_decl_list) {
-//         auto list = decl_i->name->name_list;
-//         for(auto id_i: list) {
-//             auto n = new VarDecl();
-//             n->name = id_i;
-//             n->type = decl_i->type;
-//             n->debug = "VarDecl";
-//             this->var_decl_list.push_back(n);
-//             // std::cout << "Adding var " << n->name->name << std::endl;
-//         }
-//     }
-//     // var_list->print_node("PRINT ADDVAR AFTER ", true, true);
-// }
-
 
 class FuncDecl : public Statement {
 
@@ -207,7 +206,8 @@ class IntegerType : public Expression {
 public:
     int val;
 
-    IntegerType(int val): val(val) {}   
+    IntegerType(int val): val(val) {}
+    virtual std::string toString() { return [=]() {std::stringstream oss; oss << val; return oss.str(); }(); }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
@@ -219,14 +219,6 @@ public:
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
-class Identifier : public Expression {
-public:
-    std::string         name;
-
-    Identifier(const std::string& name) : name(name) {}
-    Identifier(const char * ptr_s) : name(*(new std::string(ptr_s))) {}
-    virtual llvm::Value *CodeGen(CodeGenContext& context);
-};
 
 class MethodCall : public Expression {
 public:
@@ -240,7 +232,7 @@ public:
 
 class BinaryOperator : public Expression {
 public:
-    enum class OpType {
+    enum class OpType : int {
         plus,
         minus,
         div,
@@ -265,6 +257,14 @@ public:
         list.push_back((Node *)op2);
         return list;
     }
+    virtual std::string toString() { 
+        return "Binary op: " + [=]() -> std::string {
+            switch (op) {
+            case OpType::plus: return "plus";
+            case OpType::minus: return "minus";
+            }
+        }(); 
+    }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
@@ -281,6 +281,7 @@ public:
         list.push_back((Node *)rhs);
         return list;
     }
+    virtual std::string toString() { return "Assignment"; }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
