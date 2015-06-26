@@ -11,7 +11,7 @@ LDFLAGS = `$(LLVM_CONFIG) --ldflags`
 LIBS = `$(LLVM_CONFIG) --libs --system-libs`
 
 # FLAGS = `$(LLVM_CONFIG) --cxxflags --ldflags --libs --system-libs` 
-OBJS = parser.o tokenizer.o ast.o utils.o main.o CodeGenContext.o
+OBJS = parser.o tokenizer.o ast.o utils.o main.o CodeGenContext.o ccalc.o
 
 all: $(NAME)
 

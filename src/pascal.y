@@ -8,7 +8,7 @@
 #include "ast.h"
 #include "utils.h"
 #include "parser.hpp"
-
+#include "ccalc.h"
 using namespace std;
 
 int yydebug = 1;

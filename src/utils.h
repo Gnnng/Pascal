@@ -1,6 +1,16 @@
 #ifndef __PASCAL_H__
 #define __PASCAL_H__
 
+typedef struct YYLTYPE {
+    int first_line;
+    int first_column;
+    int last_line;
+    int last_column;
+    char *filename;
+} YYLTYPE;
+
+#define YYLTYPE_is_declared
+
 extern int yylex();
 // extern int yyparse();
 extern int yylineno;
@@ -15,8 +25,8 @@ struct ast_struct {
 	ast_node** ch;		// children
 	char* debug;		// debug info
 	int val;
-
 };
+
 
 void ast_travel(ast_node* node);
 ast_node* ast_dbg(char* debug);

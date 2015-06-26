@@ -1,9 +1,10 @@
 #include "utils.h"
+
+#include "ccalc.h"
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
 
 void yyerror(char *s, ...) {
 	PrintError(s);

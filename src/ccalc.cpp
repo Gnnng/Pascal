@@ -12,17 +12,16 @@
  *********************************************************************
  */
 #include "ccalc.h"
+#include "utils.h"
 
-#define true 1
-#define false 0
-
+YYLTYPE yylloc;
 /*
  * global variable
  */
-//int debug=0;
+int debug=0;
 
 /*
- * lokal variable
+ * local variable
  */
 // static FILE *file = stdin;
 static int eof = 0;
@@ -43,8 +42,8 @@ static char *buffer,*lastbuffer;
  * printable version of a char
  *------------------------------------------------------------------*/
 void init_buffer() {
-  buffer = malloc(lMaxBuffer);
-  lastbuffer = malloc(lMaxBuffer);
+  buffer = (char *)malloc(lMaxBuffer);
+  lastbuffer = (char *)malloc(lMaxBuffer);
 }
 static
 char dumpChar(char c) {
