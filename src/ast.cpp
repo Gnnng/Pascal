@@ -8,6 +8,7 @@
 #include <map>
 #include <functional>
 #include <stdexcept>
+#include <cassert>
 
 #include "CodeGenContext.h"
 using namespace std;
@@ -147,7 +148,7 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
 llvm::Value* ast::FuncCall::CodeGen(CodeGenContext& context) {
     auto function = context.module->getFunction(this->id->name.c_str());
     if (function == nullptr)
-        throw std::domain_error("No such function" + this->id->name);
+        throw std::domain_error("Function not defined" + this->id->name);
     std::vector<Value*> args;
     for(auto arg : *(this->argument_list)) {
         args.push_back(arg->CodeGen(context));
@@ -161,7 +162,69 @@ llvm::Value* ast::ProcCall::CodeGen(CodeGenContext& context) {}
 
 llvm::Value* ast::SysFuncCall::CodeGen(CodeGenContext& context) {}
 
-llvm::Value* ast::SysProcCall::CodeGen(CodeGenContext& context) {}
+llvm::Value* ast::SysProcCall::SysProc_write(CodeGenContext& context, bool writeln) {
+//
+// Two Declaration of get
+//
+// llvm::FunctionType * get( llvm::Type *Result, ArrayRef<llvm::Type *> Params, bool isVarArg )
+// llvm::FunctionType * get( llvm::Type *Result, bool isVarArg ) 
+// 
+// the isVarArg is for varied-length arguments function
+//
+    //auto func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(llvm::getGlobalContext()), true);
+       
+//llvm::Function * Create( llvm::FunctionType *Ty, llvm::GlobalValue::LinkageTypes Linkage, const llvm::Twine &N, llvm::Module *M )
+    //auto write_func = llvm::Function::Create(func_type, llvm::Function::InternalLinkage, writeln ? llvm::Twine("writeln") : llvm::Twine("write"), context.module);
+
+    //auto block = llvm::BasicBlock::Create(llvm::getGlobalContext(), "entry", write_func, 0);
+    //context.pushBlock(block);
+   
+    std::string printf_format;
+    std::vector<llvm::Value *> printf_args;
+
+    for(auto arg : *argument_list) {
+        auto arg_val = arg->CodeGen(context);
+        if (arg_val->getType() == llvm::Type::getInt32Ty(llvm::getGlobalContext())) {
+            printf_format += "%d";     
+            std::cout << "SysFuncCall write variable previous name" << arg_val->getName().str() << std::endl;
+            printf_args.push_back(arg_val);
+        } else if (arg_val->getType() == llvm::Type::getDoubleTy(llvm::getGlobalContext())) {
+            printf_format += "%lf";
+            printf_args.push_back(arg_val);
+        } else if (arg_val->getType() == llvm::Type::getInt8PtrTy(llvm::getGlobalContext())) {
+            assert("print string" == "not implemented");
+        }
+    }
+    
+    if (writeln)
+        printf_format += "\n";
+    
+    auto printf_format_const = llvm::ConstantDataArray::getString(llvm::getGlobalContext(), printf_format.c_str());
+
+    auto format_string_var = new llvm::GlobalVariable(*context.module, llvm::ArrayType::get(llvm::IntegerType::get(llvm::getGlobalContext(), 8), printf_format.size() + 1), true, llvm::GlobalValue::PrivateLinkage, printf_format_const, ".str");
+    
+    auto zero = llvm::Constant::getNullValue(llvm::IntegerType::getInt32Ty(llvm::getGlobalContext()));    
+
+    std::vector<llvm::Constant *> indices;
+    indices.push_back(zero); indices.push_back(zero);
+    auto var_ref = llvm::ConstantExpr::getGetElementPtr(format_string_var, indices);
+
+    printf_args.insert(printf_args.begin(), var_ref);
+    auto call = llvm::CallInst::Create(CodeGenContext::printf, llvm::makeArrayRef(printf_args), "", context.currentBlock());
+    //llvm::ReturnInst::Create(llvm::getGlobalContext(), block);
+    
+    //context.popBlock();
+    return call;
+}
+
+llvm::Value* ast::SysProcCall::CodeGen(CodeGenContext& context) {
+    if (this->id->name == "write" or this->id->name == "writeln") {
+        return this->SysProc_write(context, this->id->name == "writeln");
+    } else {
+        assert("System procedure" == "Not found");
+    }
+    return nullptr;
+}
 
 llvm::Value* ast::TypeDecl::CodeGen(CodeGenContext& context) {}
 

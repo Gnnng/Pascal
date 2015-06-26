@@ -270,6 +270,8 @@ public:
     SysProcCall(Identifier* id) : ProcCall(id) {}
     SysProcCall(Identifier* id, ExpressionList* al) : ProcCall(id, al) {}
 
+    llvm::Value* SysProc_write(CodeGenContext& context, bool writeln);
+    
     virtual std::string toString() { return "System Porcedure Call " + id->name; }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };

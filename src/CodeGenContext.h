@@ -35,6 +35,7 @@ class CodeGenContext {
     Function *mainFunction;
 
 public:
+    static llvm::Function* printf;
     Module *module;
     CodeGenContext() { module = new Module("main", getGlobalContext()); }
     
@@ -46,8 +47,6 @@ public:
     void popBlock() { CodeGenBlock *top = blocks.top(); blocks.pop(); delete top; }
     void setCurrentReturnValue(Value *value) { blocks.top()->returnValue = value; }
     Value* getCurrentReturnValue() { return blocks.top()->returnValue; }
-
-    void createWriteln();
 };
 
 #endif

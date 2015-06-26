@@ -31,8 +31,9 @@ begin
 end;
 
 begin
-	a := add(a,b);
-	b := 1;
+	a := 22;
+	b := 20;
 	c := a + b;
-	a := a + c;
+	writeln(add(a, b));
+	writeln(c);
 end.

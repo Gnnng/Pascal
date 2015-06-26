@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
 	//createCoreFunctions(context);
 	try {
 		context.generateCode(*ast_root);
-		// context.runCode();
+		context.runCode();
 	} catch (const std::domain_error &de) {
 		cout << red(de.what()) << endl;		
 	} catch (...) {

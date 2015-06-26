@@ -6,7 +6,9 @@
 #include "CodeGenContext.h"
 #include "parser.hpp"
 
-llvm::Function* createPrintf(const CodeGenContext& context) {
+llvm::Function* CodeGenContext::printf;
+
+llvm::Function* createPrintf(CodeGenContext& context) {
 	std::vector<llvm::Type *> printf_arg_types;
     printf_arg_types.push_back(llvm::Type::getInt8PtrTy(llvm::getGlobalContext()));
     auto printf_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(getGlobalContext()), printf_arg_types, true);
@@ -27,10 +29,7 @@ void CodeGenContext::generateCode(ast::Program& root)
 	mainFunction = Function::Create(ftype, GlobalValue::ExternalLinkage, "main", module);
 	BasicBlock *bblock = BasicBlock::Create(getGlobalContext(), "entry", mainFunction, 0);
 	
-
-	auto func = createPrintf(*this);
-
-
+	CodeGenContext::printf = createPrintf(*this);
 
 	/* Push a new variable/block context */
 	pushBlock(bblock);
@@ -52,10 +51,14 @@ void CodeGenContext::generateCode(ast::Program& root)
 
 /* Executes the AST by running the main function */
 GenericValue CodeGenContext::runCode() {
-	std::cout << "Running code...\n";
+	std::cout << "Running begining...\n";
+	std::cout << 
+	"========================================" << std::endl;
 	ExecutionEngine *ee = EngineBuilder(module).create();
 	std::vector<GenericValue> noargs;
 	GenericValue v = ee->runFunction(mainFunction, noargs);
-	std::cout << "Code was run.\n";
+	std::cout << 
+	"========================================" << std::endl;
+	std::cout << "Running end.\n";
 	return v;
 }
