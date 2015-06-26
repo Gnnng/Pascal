@@ -1,13 +1,29 @@
-NAME=pascal
+SRC_DIR = src
+LLC = /usr/local/opt/llvm/bin/llc
+all: compiler
+	make ll llvm.pas
 
-all:
-	bison -d ${NAME}.y
-	flex pascal.l
-	gcc -o ${NAME} utils.c ${NAME}.tab.c lex.yy.c -ll -g
+compiler:
+	$(MAKE) -C $(SRC_DIR)
+	mv $(SRC_DIR)/pascal .
 
-# make debug - check the bison output report
-debug:
-	bison -d ${NAME}.y -v
+ll:
+	./pascal < test/$(filter-out ll asm,$(MAKECMDGOALS)) 2> $(basename $(filter-out ll asm,$(MAKECMDGOALS))).ll
+
+asm: ll
+	$(LLC) -march=x86-64 $(basename $(filter-out asm,$(MAKECMDGOALS))).ll
+
+gen:
+	clang *.s -o $(basename $(filter-out gen,$(MAKECMDGOALS)))
+
+
+%:
+	@:
 
 clean:
-	-rm ${NAME}.output
+	$(MAKE) -C $(SRC_DIR) clean
+	$(RM) *.ll *.s
+
+clean-all: clean
+	$(RM) pascal
+	
