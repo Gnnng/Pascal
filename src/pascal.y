@@ -33,6 +33,7 @@ ast::Node* ast_root;
     ast::IdentifierList* 	ast_IdentifierList;
     ast::RoutineList* 		ast_RoutineList;
     ast::NameList* 			ast_NameList;
+    ast::ExpressionList* 	ast_ExpressionList;
 }
 
 %token PROGRAM IDD DOT EQUAL LTHAN LEQU GT GE PLUS MINUS MUL DIV RIGHTP LEFTP 
@@ -55,7 +56,7 @@ ast::Node* ast_root;
 %type <ast_Node> field_decl_list record_type_decl array_type_decl 
 %type <ast_Node> type_definition proc_stmt if_stmt else_clause 
 %type <ast_Node> repeat_stmt while_stmt for_stmt direction case_stmt 
-%type <ast_Node> case_expr_list case_expr goto_stmt expression_list args_list
+%type <ast_Node> case_expr_list case_expr goto_stmt 
 
 %type <ast_Program> 		program program_head routine routine_head sub_routine
 %type <ast_TypeDecl> 		type_part type_decl type_decl_list simple_type_decl 
@@ -69,6 +70,7 @@ ast::Node* ast_root;
 %type <ast_StatementList> 	routine_body compound_stmt stmt_list
 %type <ast_VarDeclList> 	var_part var_decl_list var_decl
 %type <ast_NameList> 		name_list
+%type <ast_ExpressionList>  expression_list
 
 %%
 
@@ -294,7 +296,7 @@ assign_stmt :
 
 proc_stmt : 
 	IDD                   						{ $$ = ast_dbg($1);$$->debug = "proc_stmt";}
-	|  IDD  LEFTP  args_list  RIGHTP 					{ $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "proc_stmt";}
+	|  IDD  LEFTP  expression_list  RIGHTP 		{ $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "proc_stmt";}
 	|  SYS_PROC									{ $$ = ast_dbg($1);$$->debug = "proc_stmt";}
 	|  SYS_PROC  LEFTP  expression_list  RIGHTP        { $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "proc_stmt";}
 
@@ -341,8 +343,8 @@ goto_stmt :
 ;
 
 expression_list: 
-	expression_list  COMMA  expression   		{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression_list";}
-	|  expression 								{$$ = ast_newNode1($1);$$->debug = "expression_list";}
+	expression_list COMMA expression   			{ $$ = $1; $1->push_back($3); }
+	|  expression 								{ $$ = new ast::ExpressionList(); $$->push_back($1); }
 
 expression: 
 	expr { $$ = $1; }
@@ -371,8 +373,9 @@ term:
 
 factor: 
 	NAME { $$ = new ast::Identifier($1); }
-//	|  NAME  LEFTP  args_list  RIGHTP  				{$$ = ast_newNode1(ast_dbg($1));$$->debug = "factor";}
-//	|  SYS_FUNCT SYS_FUNCT  LEFTP  args_list  RIGHTP  	{$$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),$4,ast_dbg($5));$$->debug = "factor";}
+	|  NAME LEFTP expression_list RIGHTP { $$ = new ast::MethodCall(new ast::Identifier($1), $3); }
+//	|  SYS_FUNCT 
+//  |  SYS_FUNCT  LEFTP  args_list  RIGHTP  	{$$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),$4,ast_dbg($5));$$->debug = "factor";}
 	|  const_value { $$ = (ast::Expression *)$1; };
 //	|  LEFTP  expression  RIGHTP 						{$$ = ast_newNode3(ast_dbg($1),$2,ast_dbg($3));$$->debug = "factor";}
 //	|  NOT  factor  							{$$ = ast_newNode2(ast_dbg($1),$2);$$->debug = "factor";}
@@ -381,10 +384,10 @@ factor:
 //	|  IDD  DOT  IDD 								{$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),ast_dbg($3));$$->debug = "factor";}
 ;
 
-args_list : 
-	args_list  COMMA  expression  				{$$ =ast_newNode3($1,ast_dbg($2),$3);$$->debug = "args_list";}
-	|  expression 								{$$ = ast_newNode1($1);$$->debug = "args_list";}
-;
+//args_list : 
+//	args_list  COMMA  expression  {  
+//	|  expression 				  { $$ = new ast::Exp
+//;
 %%
 
 

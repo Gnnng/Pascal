@@ -23,13 +23,14 @@ class VarDecl;
 class Statement;
 class Identifier;
 class Routine;
+class Expression;
 
 typedef std::vector<Statement *>    StatementList;
 typedef std::vector<VarDecl *>      VarDeclList;
 typedef std::vector<Identifier *>   IdentifierList;
 typedef std::vector<Routine *>      RoutineList;
 typedef std::vector<std::string>    NameList;
-
+typedef std::vector<Expression *>   ExpressionList;
 // pure virtual class for all ast nodes
 class Node {
 public:
@@ -222,12 +223,24 @@ public:
 
 class MethodCall : public Expression {
 public:
-    std::string callee;
-    std::vector<Node *> args;
+    Identifier* id;
+    ExpressionList* argument_list;
 
-    //MethodCall(const std::string &callee, std::vector<Node *> &args);
 
-    virtual llvm::Value *CodeGen(CodeGenContext& context) {}
+    MethodCall(Identifier* id, ExpressionList* argument_list) : id(id), argument_list(argument_list) {}
+
+    virtual std::vector<Node *> getChildren() { 
+        std::vector<Node *> list;
+        list.push_back((Node *)id);
+        // list.push_back((Node *)return_type);
+        for(auto i : *(argument_list)) list.push_back((Node *)i);
+        // for(auto i : *(var_part)) list.push_back((Node *)i);
+        // for(auto i : *(routine_part)) list.push_back((Node *)i);
+        // for(auto i : *(routine_body)) list.push_back((Node *)i);
+        return list;
+    }
+    virtual std::string toString() { return "MethodCall " + id->name; }
+    virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
 class BinaryOperator : public Expression {

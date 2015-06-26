@@ -129,12 +129,12 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     }
     // return value
     if (this->isFunction()) {
-        std::cout << "This is a function call" << std::endl;
+        std::cout << "Generating return value for function" << std::endl;
         auto load_ret = new llvm::LoadInst(context.locals()[this->routine_name->name], "", false, context.currentBlock());
         llvm::ReturnInst::Create(llvm::getGlobalContext(), load_ret, block);
     }
     else if(this->isProcedure()) {
-        std::cout << "This is a procedure call" << std::endl;
+        std::cout << "Generating return void for procedure" << std::endl;
         llvm::ReturnInst::Create(llvm::getGlobalContext(), block);
         
     }
@@ -143,6 +143,18 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     context.popBlock();
     std::cout << "Creating Routine" << std::endl;
     return function;
+}
+llvm::Value* ast::MethodCall::CodeGen(CodeGenContext& context) {
+    auto function = context.module->getFunction(this->id->name.c_str());
+    if (function == nullptr)
+        throw std::domain_error("No such function" + this->id->name);
+    std::vector<Value*> args;
+    for(auto arg : *(this->argument_list)) {
+        args.push_back(arg->CodeGen(context));
+    }
+    auto call = llvm::CallInst::Create(function, llvm::makeArrayRef(args), "", context.currentBlock());
+    std::cout << "Creating method call: " << this->id->name << std::endl;
+    return call;
 }
 
 llvm::Value* ast::TypeDecl::CodeGen(CodeGenContext& context) {}

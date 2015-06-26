@@ -17,7 +17,7 @@ begin
 end;
 
 begin
-	a := 0;
+	a := add(a,b);
 	b := 1;
 	c := a + b;
 	a := a + c;
