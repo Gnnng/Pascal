@@ -87,10 +87,10 @@ llvm::Value* ast::Program::CodeGen(CodeGenContext& context) {
 llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     std::vector<llvm::Type*> arg_types;
     for(auto it : *(this->argument_list))
-      arg_types.push_back(it->type->toLLVMType()); 
+        arg_types.push_back(it->type->toLLVMType()); 
     auto f_type = llvm::FunctionType::get(this->return_type->toLLVMType(), llvm::makeArrayRef(arg_types), false);
     auto function = llvm::Function::Create(f_type, llvm::GlobalValue::InternalLinkage, this->routine_name->name.c_str(), context.module);
-    auto block = llvm::BasicBlock::Create(getGlobalContext(), "entrypoint", function, 0);
+    auto block = llvm::BasicBlock::Create(getGlobalContext(), "entry", function, 0);
 
     // push block and start routine
     context.pushBlock(block);
@@ -123,10 +123,16 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
         stmt->CodeGen(context);
     }
     // return value
-    if (this->isFunction())
+    if (this->isFunction()) {
+        std::cout << "This is a function call" << std::endl;
+        auto load_ret = new llvm::LoadInst(context.locals()[this->routine_name->name], "", false, context.currentBlock());
+        llvm::ReturnInst::Create(llvm::getGlobalContext(), load_ret, block);
+    }
+    else if(this->isProcedure()) {
+        std::cout << "This is a procedure call" << std::endl;
         llvm::ReturnInst::Create(llvm::getGlobalContext(), block);
-    else if(this->isProcedure())
-        llvm::ReturnInst::Create(llvm::getGlobalContext(), context.locals()[this->routine_name->name], block);
+        
+    }
 
     // pop block and finsh
     context.popBlock();

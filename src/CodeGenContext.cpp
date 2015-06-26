@@ -16,7 +16,7 @@ void CodeGenContext::generateCode(ast::Program& root)
 	FunctionType *ftype = FunctionType::get(Type::getVoidTy(getGlobalContext()), makeArrayRef(argTypes), false);
 	// change GlobalValue::InternalLinkage into ExternalLinkage
 	mainFunction = Function::Create(ftype, GlobalValue::ExternalLinkage, "main", module);
-	BasicBlock *bblock = BasicBlock::Create(getGlobalContext(), "entrypoint", mainFunction, 0);
+	BasicBlock *bblock = BasicBlock::Create(getGlobalContext(), "entry", mainFunction, 0);
 	
 	/* Push a new variable/block context */
 	pushBlock(bblock);
