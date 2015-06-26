@@ -51,19 +51,18 @@ ast::Node* ast_root;
 %type <debug> RIGHTP LEFTP DOWNTO FOR GOTO INTEGER PROCEDURE RECORD END CASE 
 
 // default type is ast node
-%type <ast_Node> label_part const_part const_expr_list const_value 
-%type <ast_Node> procedure_head procedure_decl field_decl 
+%type <ast_Node> label_part const_part const_expr_list const_value field_decl 
 %type <ast_Node> field_decl_list record_type_decl array_type_decl 
-%type <ast_Node> type_definition proc_stmt if_stmt else_clause 
+%type <ast_Node> type_definition  if_stmt else_clause 
 %type <ast_Node> repeat_stmt while_stmt for_stmt direction case_stmt 
 %type <ast_Node> case_expr_list case_expr goto_stmt 
 
 %type <ast_Program> 		program program_head routine routine_head sub_routine
 %type <ast_TypeDecl> 		type_part type_decl type_decl_list simple_type_decl 
-%type <ast_Statement> 		stmt non_label_stmt
-%type <ast_AssignmentStmt> 	assign_stmt
+%type <ast_Statement> 		stmt non_label_stmt proc_stmt
+%type <ast_AssignmentStmt> 	assign_stmt 
 %type <ast_Expression> 		expression expr term factor 
-%type <ast_Routine> 		function_decl function_head 
+%type <ast_Routine> 		function_decl function_head procedure_head procedure_decl
 
 %type <ast_VarDeclList> 	parameters para_decl_list para_type_list
 %type <ast_RoutineList> 	routine_part
@@ -74,17 +73,17 @@ ast::Node* ast_root;
 
 %%
 
-NAME: IDD { $$ = $1; };
+NAME: IDD 										{ $$ = $1; };
 
-program: program_head routine DOT { ast_root = $2; };
+program: program_head routine DOT 				{ ast_root = $2; };
 program_head: PROGRAM IDD SEMI {} | {};
 
 routine: // ast_Program
-	routine_head routine_body { $$ = $1; $$->routine_body = $2; $$->print_node("", true, true); }
+	routine_head routine_body 					{ $$ = $1; $$->routine_body = $2; $$->print_node("", true, true); }
 ;
 
 sub_routine: // ast_Program
-	routine_head routine_body { $$ = $1; $$->routine_body = $2; $$->print_node("SUB_ROUTINE ", true, true); }
+	routine_head routine_body 					{ $$ = $1; $$->routine_body = $2; }
 ;
 
 routine_head: //ast_Program
@@ -94,7 +93,7 @@ routine_head: //ast_Program
 	}
 ;
 
-label_part: 					{ $$ = ast_dbg("empty label_part"); }
+label_part: 									{ $$ = ast_dbg("empty label_part"); }
 ;
 
 const_part:
@@ -102,7 +101,7 @@ const_part:
 		$$ = ast_newNode2(ast_dbg($1), $2);
 		$$->debug = "const_part";
 	}
-	| 							{ $$ = ast_dbg("empty const_part"); }
+	| 											{ $$ = ast_dbg("empty const_part"); }
 ;
 
 const_expr_list:
@@ -115,10 +114,7 @@ const_expr_list:
 ;
 
 const_value:
-	INTEGER { 
-		$$ = new ast::IntegerType(atoi($1));
-		$$->debug = $1;
-	}
+	INTEGER 									{ $$ = new ast::IntegerType(atoi($1)); $$->debug = $1; }
 //	| REAL 						{ $$ = ast_dbg($1);}
 //	| CHAR 						{ $$ = ast_dbg($1);}
 //	| STRING 					{ $$ = ast_dbg($1);}
@@ -127,27 +123,27 @@ const_value:
 
 
 type_part:
-	TYPE type_decl_list 		{ $$ = ast_dbg($1); $$->debug = "type_part";}
-	|							{ $$ = ast_dbg("empty type_part");}
+	TYPE type_decl_list 						{ $$ = ast_dbg($1); $$->debug = "type_part";}
+	|											{ $$ = ast_dbg("empty type_part");}
 ;
 
 type_decl_list:
-	type_decl_list type_definition { $$ = ast_newNode2($1, $2);$$->debug = "type_decl_list";}
-	| type_definition			{ $$ = ast_newNode1($1);$$->debug = "type_decl_list";}
+	type_decl_list type_definition 				{ $$ = ast_newNode2($1, $2);$$->debug = "type_decl_list";}
+	| type_definition							{ $$ = ast_newNode1($1);$$->debug = "type_decl_list";}
 ;
 
 type_definition:
-	IDD EQUAL type_decl SEMI 	{ $$ = ast_newNode4(ast_dbg($1), ast_dbg($2), $3, ast_dbg($4));$$->debug = "type_definition";}
+	IDD EQUAL type_decl SEMI 					{ $$ = ast_newNode4(ast_dbg($1), ast_dbg($2), $3, ast_dbg($4));$$->debug = "type_definition";}
 ;
 
 type_decl:
-	simple_type_decl { $$ = $1; }
+	simple_type_decl 							{ $$ = $1; }
 //	| array_type_decl			{ $$ = ast_newNode1($1);$$->debug = "type_decl";}
 //	| record_type_decl			{ $$ = ast_newNode1($1);$$->debug = "type_decl";}
 ;
 
 simple_type_decl:
-	SYS_TYPE { $$ = new ast::TypeDecl($1); }
+	SYS_TYPE									{ $$ = new ast::TypeDecl($1); }
 //	| NAME  					{ $$ = ast_dbg($1); $$->debug = "simple_type_decl";}
 //	| LEFTP name_list RIGHTP 			{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "simple_type_decl";}
 //	| const_value DOT DOT const_value 				{ $$ = ast_newNode4($1, ast_dbg($2), ast_dbg($3), $4);$$->debug = "simple_type_decl";}
@@ -157,91 +153,79 @@ simple_type_decl:
 ;
 
 array_type_decl:
-	ARRAY LB simple_type_decl RB OF type_decl 		{ $$ = ast_newNode6(ast_dbg($1), ast_dbg($2), $3, ast_dbg($4), ast_dbg($5), $6); $$->debug = "array_type_decl";}
+	ARRAY LB simple_type_decl RB OF type_decl 	{ $$ = ast_newNode6(ast_dbg($1), ast_dbg($2), $3, ast_dbg($4), ast_dbg($5), $6); $$->debug = "array_type_decl";}
 ;
 
 record_type_decl:
-	RECORD field_decl_list END 	{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "record_type_decl";}
+	RECORD field_decl_list END 					{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "record_type_decl";}
 ;
 
 field_decl_list:
-	field_decl_list field_decl 	{ $$ = ast_newNode2($1, $2);$$->debug = "field_decl_list";}
-	| field_decl 				{ $$ = ast_newNode1($1); $$->debug = "field_decl_list";}
+	field_decl_list field_decl 					{ $$ = ast_newNode2($1, $2);$$->debug = "field_decl_list";}
+	| field_decl 								{ $$ = ast_newNode1($1); $$->debug = "field_decl_list";}
 ;
 
 field_decl:
-	name_list COLON type_decl SEMI 					{ $$ = ast_newNode4($1, ast_dbg($2), $3, ast_dbg($4));$$->debug = "field_decl";}
+	name_list COLON type_decl SEMI 				{ $$ = ast_newNode4($1, ast_dbg($2), $3, ast_dbg($4));$$->debug = "field_decl";}
 ;
 
 name_list: // ast_NameList
-	name_list COMMA IDD { $$ = $1; $$->push_back($3); }
-	| IDD 				{ $$ = new ast::NameList(); $$->push_back($1); }
+	name_list COMMA IDD 						{ $$ = $1; $$->push_back($3); }
+	| IDD 										{ $$ = new ast::NameList(); $$->push_back($1); }
 ;
 
 var_part:
-	VAR var_decl_list 	{ $$ = $2; }
-	|  					{ $$ = new ast::VarDeclList(); }
+	VAR var_decl_list 							{ $$ = $2; }
+	|  											{ $$ = new ast::VarDeclList(); }
 ;
 
 var_decl_list:
-	var_decl_list var_decl { $$ = $1; $1->insert($1->end(), $1->begin(), $1->end()); }
-	| var_decl { $$ = $1; }
+	var_decl_list var_decl 						{ $$ = $1; $1->insert($1->end(), $1->begin(), $1->end()); }
+	| var_decl 									{ $$ = $1; }
 ;
 
 var_decl:
-	name_list COLON type_decl SEMI { 
-		$$ = new ast::VarDeclList();
-		for(auto name : *($1))
-			$$->push_back(new ast::VarDecl(new ast::Identifier(name), $3));
-	}
+	name_list COLON type_decl SEMI { $$ = new ast::VarDeclList(); for(auto name : *($1)) $$->push_back(new ast::VarDecl(new ast::Identifier(name), $3)); }
 ;
 
 routine_part:
-	routine_part function_decl  { $$ = $1; $1->push_back($2); }
-//	| routine_part procedure_decl 					{ $$ = ast_newNode2($1, $2);$$->debug = "routine_part";}
+	routine_part function_decl 					{ $$ = $1; $1->push_back($2); }
+	| routine_part procedure_decl 				{ $$ = $1; $1->push_back($2); }
 //	| procedure_decl			{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
 //	| function_decl				{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
-	| 							{ $$ = new ast::RoutineList(); }
+	| 											{ $$ = new ast::RoutineList(); }
 ;
 
 function_decl:
-	function_head SEMI sub_routine SEMI { $$ = new ast::Routine($1, $3); }
+	function_head SEMI sub_routine SEMI 		{ $$ = new ast::Routine($1, $3); }
 ;
 
 function_head:
-	FUNCTION IDD parameters COLON simple_type_decl { 
-		$$ = new ast::Routine(ast::Routine::RoutineType::function, new ast::Identifier($2), $3, $5);
-	}
+	FUNCTION IDD parameters COLON simple_type_decl { $$ = new ast::Routine(ast::Routine::RoutineType::function, new ast::Identifier($2), $3, $5); }
 ;
 
 procedure_decl:
-	procedure_head SEMI sub_routine SEMI 			{ $$ = ast_newNode4($1, ast_dbg($2), $3, ast_dbg($4)); $$->debug = "procedure_decl";}
+	procedure_head SEMI sub_routine SEMI 		{ $$ = new ast::Routine($1, $3); }
 ;
 
 procedure_head:
-	PROCEDURE IDD parameters 						{ $$ = ast_newNode3(ast_dbg($1), ast_dbg($2), $3);$$->debug = "procedure_head";}
+	PROCEDURE IDD parameters 					{ $$ = new ast::Routine(ast::Routine::RoutineType::procedure, new ast::Identifier($2), $3, nullptr); }
 ;
 
 parameters:
-	LEFTP para_decl_list RIGHTP { $$ = $2; }
-	| LEFTP RIGHTP { $$ = new ast::VarDeclList(); }
-	| { $$ = new ast::VarDeclList(); }
+	LEFTP para_decl_list RIGHTP 				{ $$ = $2; }
+	| LEFTP RIGHTP 								{ $$ = new ast::VarDeclList(); }
+	| 											{ $$ = new ast::VarDeclList(); }
 ;
 
 para_decl_list:
-	para_decl_list SEMI para_type_list { $$ = $1; $1->insert($1->end(), $3->begin(), $3->end()); }
-	| para_type_list { $$ = $1; }
+	para_decl_list SEMI para_type_list 			{ $$ = $1; $1->insert($1->end(), $3->begin(), $3->end()); }
+	| para_type_list 							{ $$ = $1; }
 ;
 
 para_type_list: //TODO: var is different
-	VAR name_list COLON simple_type_decl {
-		$$ = new ast::VarDeclList();
-		for(auto name: *($2)) $$->push_back(new ast::VarDecl(new ast::Identifier(name), $4));
-	}
-	| name_list COLON simple_type_decl {
-		$$ = new ast::VarDeclList();
-		for(auto name: *($1)) $$->push_back(new ast::VarDecl(new ast::Identifier(name), $3));
-	}
+	VAR name_list COLON simple_type_decl 		{ $$ = new ast::VarDeclList(); for(auto name: *($2)) $$->push_back(new ast::VarDecl(new ast::Identifier(name), $4)); }
+	| name_list COLON simple_type_decl 			{ $$ = new ast::VarDeclList(); for(auto name: *($1)) $$->push_back(new ast::VarDecl(new ast::Identifier(name), $3)); }
 ;
 
 //
@@ -263,22 +247,20 @@ compound_stmt :
 ;
 
 stmt_list : 
-	stmt_list stmt {
-		//yyerror("SEMI error");
-	}
-	| stmt_list  stmt  SEMI { $$ = $1; $1->push_back($2); }
-	| { $$ = new ast::StatementList(); }
+	stmt_list stmt 								{/*yyerror("SEMI error");}*/ }
+	| stmt_list  stmt  SEMI 					{ $$ = $1; $1->push_back($2); }
+	| 											{ $$ = new ast::StatementList(); }
 ;
 
 stmt: 
-	non_label_stmt { $$ = $1; }
+	non_label_stmt 								{ $$ = $1; }
 	//| INTEGER  COLON  non_label_stmt { 
 		//$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),$3);$$->debug = "stmt";
 	//}
 ;
 non_label_stmt : 
 	assign_stmt { $$ = (ast::Statement *)$1; }
-//	| proc_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}	
+	| proc_stmt 								{ $$ = (ast::Statement *) $1; }	
 //	| compound_stmt 				{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
 //	| if_stmt 						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}		
 //	| repeat_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
@@ -289,24 +271,21 @@ non_label_stmt :
 ;
 
 assign_stmt :  
-	IDD  ASSIGN  expression { $$ = new ast::AssignmentStmt(new ast::Identifier($1), $3); }
+	IDD  ASSIGN  expression 					{ $$ = new ast::AssignmentStmt(new ast::Identifier($1), $3); }
 	//| ID LB expression RB ASSIGN expression     { $$ = ast_newNode6(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4),ast_dbg($5),$6);$$->debug = "assign_stmt";} 
 	//| ID  DOT  ID  ASSIGN  expression           { $$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),ast_dbg($4),$5);$$->debug = "assign_stmt";} 
 ;
 
 proc_stmt : 
-	IDD                   						{ $$ = ast_dbg($1);$$->debug = "proc_stmt";}
-	|  IDD  LEFTP  expression_list  RIGHTP 		{ $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "proc_stmt";}
-	|  SYS_PROC									{ $$ = ast_dbg($1);$$->debug = "proc_stmt";}
-	|  SYS_PROC  LEFTP  expression_list  RIGHTP        { $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "proc_stmt";}
-
-	|  READ  LEFTP  factor  RIGHTP 					{ $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "proc_stmt";}
-     
-;
+	IDD                   						{ $$ = new ast::ProcCall(new ast::Identifier($1)); }
+	|  IDD  LEFTP  expression_list  RIGHTP 		{ $$ = new ast::ProcCall(new ast::Identifier($1), $3); }
+	|  SYS_PROC									{ $$ = new ast::SysProcCall(new ast::Identifier($1)); }
+	|  SYS_PROC  LEFTP  expression_list  RIGHTP { $$ = new ast::SysProcCall(new ast::Identifier($1), $3); }
+//	|  READ  LEFTP  factor  RIGHTP 			    { $$ = new ast::SysProcCall(new ast::Identifier($1), $3); }
 
 // TODO: if_stmt may contains a shift/reduce conflict
 if_stmt : 
-	IF  expression THEN stmt else_clause 			{ $$ = ast_newNode5(ast_dbg($1),$2,ast_dbg($3),$4, $5);$$->debug = "if_stmt";}
+	IF  expression THEN stmt else_clause 		{ $$ = ast_newNode5(ast_dbg($1),$2,ast_dbg($3),$4, $5);$$->debug = "if_stmt";}
 ;
 
 else_clause : 
@@ -348,10 +327,10 @@ expression_list:
 
 expression: 
 	expr { $$ = $1; }
-//	|  expression  GE  expr  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
+//	|  expression  GE  expr  					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
 //	|  expression  GT  expr  					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
 //	|  expression  LEQU  expr 					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
-//    |  expression  LTHAN  expr  					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
+//    |  expression  LTHAN  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
 //	|  expression  EQUAL  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
 //	|  expression  UNEQUAL  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}	
 ;
@@ -365,18 +344,18 @@ expr:
 
 term: 
 	factor { $$ = $1; }
-//	|  term  MUL  factor  							{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
+//	|  term  MUL  factor  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
 //	|  term  DIV  factor  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
 //	|  term  MOD  factor 						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
 // 	|  term  AND  factor  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
 ;
 
 factor: 
-	NAME { $$ = new ast::Identifier($1); }
-	|  NAME LEFTP expression_list RIGHTP { $$ = new ast::MethodCall(new ast::Identifier($1), $3); }
-//	|  SYS_FUNCT 
-//  |  SYS_FUNCT  LEFTP  args_list  RIGHTP  	{$$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),$4,ast_dbg($5));$$->debug = "factor";}
-	|  const_value { $$ = (ast::Expression *)$1; };
+	NAME 										{ $$ = new ast::Identifier($1); }
+	|  NAME LEFTP expression_list RIGHTP		{ $$ = new ast::FuncCall(new ast::Identifier($1), $3); }
+	|  SYS_FUNCT 								{ $$ = new ast::SysFuncCall(new ast::Identifier($1)); }
+    |  SYS_FUNCT LEFTP expression_list RIGHTP 	{ $$ = new ast::SysFuncCall(new ast::Identifier($1), $3); }
+	|  const_value 								{ $$ = (ast::Expression *)$1; };
 //	|  LEFTP  expression  RIGHTP 						{$$ = ast_newNode3(ast_dbg($1),$2,ast_dbg($3));$$->debug = "factor";}
 //	|  NOT  factor  							{$$ = ast_newNode2(ast_dbg($1),$2);$$->debug = "factor";}
 //	|  MINUS  factor  							{$$ = ast_newNode2(ast_dbg($1),$2);$$->debug = "factor";}

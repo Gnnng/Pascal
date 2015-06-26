@@ -119,7 +119,7 @@ public:
         for(auto i : *(routine_body)) list.push_back((Node *)i);
         return list;
     }
-    virtual std::string toString() { return "Routine start"; }
+    virtual std::string toString() { return routine_type == RoutineType::function ? "Function" : "Procedure"; }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
@@ -190,7 +190,7 @@ public:
         list.push_back((Node *)type);
         return list;
     }
-    std::string toString() { return "VarDecl: " + name->toString() + "-" + type->toString(); }
+    std::string toString() { return "VarDecl"; }
     virtual llvm::Value* CodeGen(CodeGenContext& context);
 };
 
@@ -221,13 +221,13 @@ public:
 };
 
 
-class MethodCall : public Expression {
+class FuncCall : public Expression, public Statement {
 public:
     Identifier* id;
     ExpressionList* argument_list;
 
-
-    MethodCall(Identifier* id, ExpressionList* argument_list) : id(id), argument_list(argument_list) {}
+    FuncCall(Identifier* id) : id(id), argument_list(nullptr) {}
+    FuncCall(Identifier* id, ExpressionList* argument_list) : id(id), argument_list(argument_list) {}
 
     virtual std::vector<Node *> getChildren() { 
         std::vector<Node *> list;
@@ -239,7 +239,47 @@ public:
         // for(auto i : *(routine_body)) list.push_back((Node *)i);
         return list;
     }
-    virtual std::string toString() { return "MethodCall " + id->name; }
+    virtual std::string toString() { return "FuncCall " + id->name; }
+    virtual llvm::Value *CodeGen(CodeGenContext& context);
+};
+
+class ProcCall : public Statement {
+public:
+    Identifier* id;
+    ExpressionList* argument_list;
+
+    ProcCall(Identifier* id) : id(id), argument_list(nullptr) {}
+    ProcCall(Identifier* id, ExpressionList* argument_list) : id(id), argument_list(argument_list) {}
+
+    virtual std::vector<Node *> getChildren() { 
+        std::vector<Node *> list;
+        list.push_back((Node *)id);
+        // list.push_back((Node *)return_type);
+        for(auto i : *(argument_list)) list.push_back((Node *)i);
+        // for(auto i : *(var_part)) list.push_back((Node *)i);
+        // for(auto i : *(routine_part)) list.push_back((Node *)i);
+        // for(auto i : *(routine_body)) list.push_back((Node *)i);
+        return list;
+    }
+    virtual std::string toString() { return "ProcCall " + id->name; }
+    virtual llvm::Value *CodeGen(CodeGenContext& context);
+};
+
+class SysProcCall : public ProcCall {
+public:
+    SysProcCall(Identifier* id) : ProcCall(id) {}
+    SysProcCall(Identifier* id, ExpressionList* al) : ProcCall(id, al) {}
+
+    virtual std::string toString() { return "System Porcedure Call " + id->name; }
+    virtual llvm::Value *CodeGen(CodeGenContext& context);
+};
+
+class SysFuncCall : public FuncCall {
+public:
+    SysFuncCall(Identifier* id) : FuncCall(id) {}
+    SysFuncCall(Identifier* id, ExpressionList* al) : FuncCall(id, al) {}
+
+    virtual std::string toString() { return "System Function Call " + id->name; }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
@@ -281,7 +321,7 @@ public:
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
-class AssignmentStmt : public Expression {
+class AssignmentStmt : public Statement {
 public:
     Identifier* lhs; // left-hand side
     Expression* rhs;

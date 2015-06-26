@@ -93,7 +93,7 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     std::vector<llvm::Type*> arg_types;
     for(auto it : *(this->argument_list))
         arg_types.push_back(it->type->toLLVMType()); 
-    auto f_type = llvm::FunctionType::get(this->return_type->toLLVMType(), llvm::makeArrayRef(arg_types), false);
+    auto f_type = llvm::FunctionType::get(this->isProcedure() ? llvm::Type::getVoidTy(llvm::getGlobalContext()) : this->return_type->toLLVMType(), llvm::makeArrayRef(arg_types), false);
     auto function = llvm::Function::Create(f_type, llvm::GlobalValue::InternalLinkage, this->routine_name->name.c_str(), context.module);
     auto block = llvm::BasicBlock::Create(getGlobalContext(), "entry", function, 0);
 
@@ -141,10 +141,10 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
 
     // pop block and finsh
     context.popBlock();
-    std::cout << "Creating Routine" << std::endl;
+    std::cout << "Creating " << this->toString() << ":" << this->routine_name->name << std::endl;
     return function;
 }
-llvm::Value* ast::MethodCall::CodeGen(CodeGenContext& context) {
+llvm::Value* ast::FuncCall::CodeGen(CodeGenContext& context) {
     auto function = context.module->getFunction(this->id->name.c_str());
     if (function == nullptr)
         throw std::domain_error("No such function" + this->id->name);
@@ -156,6 +156,12 @@ llvm::Value* ast::MethodCall::CodeGen(CodeGenContext& context) {
     std::cout << "Creating method call: " << this->id->name << std::endl;
     return call;
 }
+
+llvm::Value* ast::ProcCall::CodeGen(CodeGenContext& context) {}
+
+llvm::Value* ast::SysFuncCall::CodeGen(CodeGenContext& context) {}
+
+llvm::Value* ast::SysProcCall::CodeGen(CodeGenContext& context) {}
 
 llvm::Value* ast::TypeDecl::CodeGen(CodeGenContext& context) {}
 

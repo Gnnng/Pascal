@@ -46,6 +46,8 @@ public:
     void popBlock() { CodeGenBlock *top = blocks.top(); blocks.pop(); delete top; }
     void setCurrentReturnValue(Value *value) { blocks.top()->returnValue = value; }
     Value* getCurrentReturnValue() { return blocks.top()->returnValue; }
+
+    void createWriteln();
 };
 
 #endif

@@ -6,6 +6,15 @@
 #include "CodeGenContext.h"
 #include "parser.hpp"
 
+llvm::Function* createPrintf(const CodeGenContext& context) {
+	std::vector<llvm::Type *> printf_arg_types;
+    printf_arg_types.push_back(llvm::Type::getInt8PtrTy(llvm::getGlobalContext()));
+    auto printf_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(getGlobalContext()), printf_arg_types, true);
+    auto func = llvm::Function::Create(printf_type, llvm::Function::ExternalLinkage, llvm::Twine("printf"), context.module);
+    func->setCallingConv(llvm::CallingConv::C);
+    return func;
+}
+
 /* Compile the AST into a module */
 void CodeGenContext::generateCode(ast::Program& root)
 {
@@ -18,6 +27,11 @@ void CodeGenContext::generateCode(ast::Program& root)
 	mainFunction = Function::Create(ftype, GlobalValue::ExternalLinkage, "main", module);
 	BasicBlock *bblock = BasicBlock::Create(getGlobalContext(), "entry", mainFunction, 0);
 	
+
+	auto func = createPrintf(*this);
+
+
+
 	/* Push a new variable/block context */
 	pushBlock(bblock);
 	root.CodeGen(*this); /* emit bytecode for the toplevel block */
