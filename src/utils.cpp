@@ -4,13 +4,28 @@
 #include <stdio.h>
 #include <string.h>
 
+
 void yyerror(char *s, ...) {
-	va_list ap;
-	va_start(ap, s);
-	fprintf(stderr, "error at: %s\n", yytext);
-	fprintf(stderr, "%d: error: ", yylineno);
-	vfprintf(stderr, s, ap);
-	fprintf(stderr, "\n");
+	PrintError(s);
+	// va_list ap;
+	// static char errmsg[10000];
+	// va_list args;
+	// int start=nTokenStart;
+	// int end=start + nTokenLength - 1;
+	// int i;
+ //    fprintf(stdout, "...... !");
+ //    for (i=0; i<nBuffer; i++)
+ //      fprintf(stdout, ".");
+ //    fprintf(stdout, "^\n");
+ //    va_start(args, errorstring);
+ //  	vsprintf(errmsg, errorstring, args);
+ //  	va_end(args);
+	// fprintf(stdout, "Error: %s\n", errmsg);
+	// va_start(ap, s);
+	// fprintf(stderr, "error at: %s\n", yytext);
+	// fprintf(stderr, "%d: error: ", yylineno);
+	// vfprintf(stderr, s, ap);
+	// fprintf(stderr, "\n");
 }
 
 int count = 0;
