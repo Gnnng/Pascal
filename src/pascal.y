@@ -222,6 +222,7 @@ procedure_head:
 
 parameters:
 	LEFTP para_decl_list RIGHTP { $$ = $2; }
+	| LEFTP RIGHTP { $$ = new ast::VarDeclList(); }
 	| { $$ = new ast::VarDeclList(); }
 ;
 

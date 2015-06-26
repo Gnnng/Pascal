@@ -7,6 +7,7 @@
 #include <iostream>
 #include <map>
 #include <functional>
+#include <stdexcept>
 
 #include "CodeGenContext.h"
 using namespace std;
@@ -27,7 +28,7 @@ llvm::Type* ast::TypeDecl::toLLVMType() {
 llvm::Value* ast::Identifier::CodeGen(CodeGenContext& context) {
 	std::cout << "Creating identifier: " << name << std::endl;
     if (context.locals().find(name) == context.locals().end()) {
-        std::cerr << "Undeclared variable " << name << std::endl;
+        throw std::logic_error("Undeclared variable " + name);
         return nullptr;
     }
     return new llvm::LoadInst(context.locals()[name], "", false, context.currentBlock());
@@ -43,15 +44,19 @@ llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
     llvm::Instruction::BinaryOps inst;
     if (this->op == ast::BinaryOperator::OpType::plus) {
         inst = llvm::Instruction::Add;
-        return llvm::BinaryOperator::Create(inst, op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
-    } else
+        auto ret = llvm::BinaryOperator::Create(inst, op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+        std::cout << "Finshed BinaryOperator" << std::endl;
+        return ret;
+    } else {
         return nullptr;
+    }
 }
 
 llvm::Value* ast::AssignmentStmt::CodeGen(CodeGenContext& context) {
     std::cout << "Creating assignemnt for id " << this->lhs->name << endl;
     if (context.locals().find(lhs->name) == context.locals().end()) {
-        std::cerr << "Undeclared variable" << lhs->name << endl;
+        throw std::domain_error("Undeclared variable " + lhs->name);
+        return nullptr;
     }
     return new llvm::StoreInst(rhs->CodeGen(context), context.locals()[lhs->name], false, context.currentBlock());
 }

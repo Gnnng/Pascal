@@ -1,12 +1,11 @@
 SRC_DIR = src
 LLC = /usr/local/opt/llvm/bin/llc
 all: compiler
+	make ll llvm.pas
 
 compiler:
 	$(MAKE) -C $(SRC_DIR)
 	mv $(SRC_DIR)/pascal .
-
-TEST_FILE = 
 
 ll:
 	./pascal < test/$(filter-out ll asm,$(MAKECMDGOALS)) 2> $(basename $(filter-out ll asm,$(MAKECMDGOALS))).ll
