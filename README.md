@@ -4,6 +4,11 @@
 - Zhang yuhao ([@denil1111](http://github.com/denil1111))
 - Gong Deli ([@Gnnng](http://github.com/Gnnng))
 
+# Depedency
+
+- llvm 3.5.1 (must be)
+- `-std=stdc++11`
+
 # Reference
 * LLVM官网教程
 	http://llvm.org/docs/tutorial/index.html
