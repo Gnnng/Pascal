@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <iostream>
 #include <string>
-
 #include "ast.h"
 #include "utils.h"
 #include "parser.hpp"
@@ -14,7 +13,6 @@ using namespace std;
 int yydebug = 1;
 ast::Node* ast_root;
 %}
-
 %union{
 	char* 					debug;
 
@@ -248,7 +246,7 @@ compound_stmt :
 ;
 
 stmt_list : 
-	stmt_list stmt 								{/*yyerror("SEMI error");}*/ }
+	stmt_list stmt 	"\n"							{yyerror("expected ';' at the end of the last line"); }
 	| stmt_list  stmt  SEMI 					{ $$ = $1; $1->push_back($2); }
 	| 											{ $$ = new ast::StatementList(); }
 ;
@@ -260,7 +258,8 @@ stmt:
 	//}
 ;
 non_label_stmt : 
-	assign_stmt { $$ = (ast::Statement *)$1; }
+	error
+	|assign_stmt { $$ = (ast::Statement *)$1; }
 	| proc_stmt 								{ $$ = (ast::Statement *) $1; }	
 //	| compound_stmt 				{ $$ = $1;}
 	| if_stmt 						{ $$ = (ast::Statement *)$1;}		
@@ -271,7 +270,8 @@ non_label_stmt :
 //	| goto_stmt						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
 ;
 
-assign_stmt :  
+assign_stmt : 
+
 	IDD  ASSIGN  expression 					{ $$ = new ast::AssignmentStmt(new ast::Identifier($1), $3); }
 	//| ID LB expression RB ASSIGN expression     { $$ = ast_newNode6(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4),ast_dbg($5),$6);$$->debug = "assign_stmt";} 
 	//| ID  DOT  ID  ASSIGN  expression           { $$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),ast_dbg($4),$5);$$->debug = "assign_stmt";} 
@@ -326,13 +326,14 @@ expression_list:
 	expression_list COMMA expression   			{ $$ = $1; $1->push_back($3); }
 	|  expression 								{ $$ = new ast::ExpressionList(); $$->push_back($1); }
 
-expression: 
-	expr { $$ = $1; }
+expression:
+	error
+	|expr { $$ = $1; }
 //	|  expression  GE  expr  					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
 //	|  expression  GT  expr  					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
 //	|  expression  LEQU  expr 					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
 //    |  expression  LTHAN  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
-	|  expression  EQUAL  expr  				{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::eq, $3);}
+	|  expression  EQUAL  expr  				{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::eq, $3);}                 
 //	|  expression  UNEQUAL  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}	
 ;
 
@@ -344,7 +345,8 @@ expr:
 ;
 
 term: 
-	factor { $$ = $1; }
+	error
+	|  factor { $$ = $1; }
 //	|  term  MUL  factor  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
 //	|  term  DIV  factor  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
 //	|  term  MOD  factor 						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}

@@ -12,16 +12,18 @@
  *********************************************************************
  */
 #include "ccalc.h"
-#include "utils.h"
 
-YYLTYPE yylloc;
+#define true 1
+#define false 0
+
 /*
  * global variable
  */
 int debug=0;
+YYLTYPE yylloc;
 
 /*
- * local variable
+ * lokal variable
  */
 // static FILE *file = stdin;
 static int eof = 0;
@@ -42,8 +44,8 @@ static char *buffer,*lastbuffer;
  * printable version of a char
  *------------------------------------------------------------------*/
 void init_buffer() {
-  buffer = (char *)malloc(lMaxBuffer);
-  lastbuffer = (char *)malloc(lMaxBuffer);
+  buffer = (char*)malloc(lMaxBuffer);
+  lastbuffer = (char*)malloc(lMaxBuffer);
 }
 static
 char dumpChar(char c) {
@@ -101,13 +103,13 @@ extern
 void PrintError(char *errorstring, ...) {
   static char errmsg[10000];
   va_list args;
-  char *temp=buffer;
-  buffer = lastbuffer;
-  nRow -= 1;
-  DumpRow();
-  buffer = temp;
-  nRow+=1;
-  DumpRow();
+  // char *temp=buffer;
+  // buffer = lastbuffer;
+  // nRow -= 1;
+  // DumpRow();
+  // buffer = temp;
+  // nRow+=1;
+  // DumpRow();
   int start=nTokenStart;
   int end=start + nTokenLength - 1;
   int i;
@@ -148,7 +150,7 @@ void PrintError(char *errorstring, ...) {
   vsprintf(errmsg, errorstring, args);
   va_end(args);
 
-  fprintf(stdout, "\nError: %s\n", errmsg);
+  fprintf(stdout, "\n\033[1;31m Error \033[0m\033[1m: %s\033[0m\n", errmsg);
 }
 /*--------------------------------------------------------------------
  * getNextLine
@@ -169,7 +171,7 @@ int getNextLine(void) {
 
   /*================================================================*/
   /* read a line ---------------------------------------------------*/
-  strcpy(lastbuffer,buffer);
+  strncpy(lastbuffer,buffer,lMaxBuffer);
   p = fgets(buffer, lMaxBuffer, stdin);
   if (  p == NULL  ) {
     if (  ferror(stdin)  )
@@ -180,7 +182,7 @@ int getNextLine(void) {
 
   nRow += 1;
   lBuffer = strlen(buffer);
-  // DumpRow();
+  DumpRow();
 
   /*================================================================*/
   /* that's it -----------------------------------------------------*/

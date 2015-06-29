@@ -5,9 +5,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
+int parseError = 0;
 void yyerror(char *s, ...) {
 	PrintError(s);
+	parseError = 1;
 	// va_list ap;
 	// static char errmsg[10000];
 	// va_list args;

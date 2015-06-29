@@ -16,6 +16,11 @@
       result = YY_NULL; \
     }
 #define YYLVAL_DEBUG yylval.debug = strdup(yytext); 
+extern YYLTYPE yylloc;
+int yycolumn = 1;
+#define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno;\
+	yylloc.first_column = yycolumn; yylloc.last_column = yycolumn + yyleng - 1; \
+    yycolumn += yyleng; 
 %}
 %%
 "="      { BeginToken(yytext);YYLVAL_DEBUG return EQUAL; }
@@ -71,6 +76,7 @@
 "boolean"|"char"|"integer"|"real"|"longint"    {BeginToken(yytext);YYLVAL_DEBUG return SYS_TYPE;}
 ([_a-zA-Z])([_a-zA-Z0-9])* { BeginToken(yytext);yylval.debug = strdup(yytext);return IDD; }
 
-[ \n\t]+
-.		{ printf("Invalid character\n");} 		
+[ \n\t]+ {BeginToken(yytext);}
+.		{ printf("Invalid character\n");} 
+
 %%
