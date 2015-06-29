@@ -12,7 +12,7 @@
 
 #include "CodeGenContext.h"
 using namespace std;
-
+// int ast::IfStmt::instanceCount = 0;
 // static member
 
 // other definition
@@ -28,11 +28,12 @@ llvm::Type* ast::TypeDecl::toLLVMType() {
 // Code Gen section
 llvm::Value* ast::Identifier::CodeGen(CodeGenContext& context) {
 	std::cout << "Creating identifier: " << name << std::endl;
-    if (context.locals().find(name) == context.locals().end()) {
-        throw std::logic_error("Undeclared variable " + name);
-        return nullptr;
-    }
-    return new llvm::LoadInst(context.locals()[name], "", false, context.currentBlock());
+    context.getValue(name);
+    // if (context.locals().find(name) == context.locals().end()) {
+    //     throw std::logic_error("Undeclared variable " + name);
+    //     return nullptr;
+    // }
+    return new llvm::LoadInst(context.getValue(name), "", false, context.currentBlock());
 }
 
 llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
@@ -41,32 +42,51 @@ llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
 }
 
 llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
-    std::cout << "Creating BinaryOperator " << typeid(this->op).name() << std::endl;
-    llvm::Instruction::BinaryOps inst;
-    if (this->op == ast::BinaryOperator::OpType::plus) {
-        inst = llvm::Instruction::Add;
-        auto ret = llvm::BinaryOperator::Create(inst, op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
-        std::cout << "Finshed BinaryOperator" << std::endl;
-        return ret;
-    } else {
-        return nullptr;
+    llvm::Instruction::BinaryOps instr;
+    switch (op) {
+   
+    // Arithmetic Operations
+    case OpType::plus:    return llvm::BinaryOperator::Create( llvm::Instruction::Add,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+    case OpType::minus:   return llvm::BinaryOperator::Create( llvm::Instruction::Sub,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+    case OpType::mul:     return llvm::BinaryOperator::Create( llvm::Instruction::Mul,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+    case OpType::div:     return llvm::BinaryOperator::Create( llvm::Instruction::SDiv,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+    
+    // Logical Operations
+    case OpType::eq:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_EQ,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+    case OpType::ne:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_NE,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+    case OpType::lt:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SLT,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+    case OpType::gt:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SGT,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+    case OpType::le:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SLE,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+    case OpType::ge:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SGE,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
     }
+
+    return nullptr;
 }
 
 llvm::Value* ast::AssignmentStmt::CodeGen(CodeGenContext& context) {
     std::cout << "Creating assignemnt for id " << this->lhs->name << endl;
-    if (context.locals().find(lhs->name) == context.locals().end()) {
-        throw std::domain_error("Undeclared variable " + lhs->name);
-        return nullptr;
-    }
-    return new llvm::StoreInst(rhs->CodeGen(context), context.locals()[lhs->name], false, context.currentBlock());
+    // if (context.locals().find(lhs->name) == context.locals().end()) {
+    //     throw std::domain_error("Undeclared variable " + lhs->name);
+    //     return nullptr;
+    // }
+    return new llvm::StoreInst(rhs->CodeGen(context), context.getValue(lhs->name), false, context.currentBlock());
 }
 
 
 llvm::Value* ast::VarDecl::CodeGen(CodeGenContext& context) {
     std::cout << "Creating variable declaration " << this->name->name << std::endl;
     auto alloc = new llvm::AllocaInst(this->type->toLLVMType(), this->name->name.c_str(), context.currentBlock());
-    context.locals()[this->name->name] = alloc;
+    context.insert(this->name->name,alloc);
     return alloc;
 }
 
@@ -97,7 +117,8 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     auto f_type = llvm::FunctionType::get(this->isProcedure() ? llvm::Type::getVoidTy(llvm::getGlobalContext()) : this->return_type->toLLVMType(), llvm::makeArrayRef(arg_types), false);
     auto function = llvm::Function::Create(f_type, llvm::GlobalValue::InternalLinkage, this->routine_name->name.c_str(), context.module);
     auto block = llvm::BasicBlock::Create(getGlobalContext(), "entry", function, 0);
-
+    auto oldFunc = context.currentFunction;
+    context.currentFunction = function;
     // push block and start routine
     context.pushBlock(block);
 
@@ -132,16 +153,17 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     if (this->isFunction()) {
         std::cout << "Generating return value for function" << std::endl;
         auto load_ret = new llvm::LoadInst(context.locals()[this->routine_name->name], "", false, context.currentBlock());
-        llvm::ReturnInst::Create(llvm::getGlobalContext(), load_ret, block);
+        llvm::ReturnInst::Create(llvm::getGlobalContext(), load_ret, context.currentBlock());
     }
     else if(this->isProcedure()) {
         std::cout << "Generating return void for procedure" << std::endl;
-        llvm::ReturnInst::Create(llvm::getGlobalContext(), block);
+        llvm::ReturnInst::Create(llvm::getGlobalContext(), context.currentBlock());
         
     }
 
     // pop block and finsh
     context.popBlock();
+    context.currentFunction = oldFunc;
     std::cout << "Creating " << this->toString() << ":" << this->routine_name->name << std::endl;
     return function;
 }
@@ -231,3 +253,36 @@ llvm::Value* ast::TypeDecl::CodeGen(CodeGenContext& context) {}
 llvm::Value* ast::RealType::CodeGen(CodeGenContext& context) {}
 
 llvm::Value* ast::Expression::CodeGen(CodeGenContext& context) {}
+
+llvm::Value* ast::IfStmt::CodeGen(CodeGenContext& context) {
+    Value* test = condition->CodeGen( context );
+    BasicBlock *btrue = BasicBlock::Create(getGlobalContext(), "thenStmt", context.currentFunction);
+    BasicBlock *bfalse = BasicBlock::Create(getGlobalContext(), "elseStmt", context.currentFunction);
+    BasicBlock *bmerge = BasicBlock::Create(getGlobalContext(), "mergeStmt", context.currentFunction);    
+    auto ret = llvm::BranchInst::Create(btrue,bfalse,test,context.currentBlock());
+
+    // context.currentBlock()->getInstList().push_back(ret);
+    context.pushBlock(btrue);
+    thenStmt->CodeGen(context);
+    llvm::BranchInst::Create(bmerge,context.currentBlock());
+    context.popBlock();
+    context.pushBlock(bfalse);
+    if (elseStmt != NULL)
+        elseStmt->CodeGen(context);
+    llvm::BranchInst::Create(bmerge,context.currentBlock());
+    context.popBlock();
+    context.pushBlock(bmerge);
+
+    // context.popBlock();
+    // context.pushBlock(bexit);
+ 
+    // if( hasFalseBranch ){   
+        // context.pushBlock(bfalse);
+        // thenStmt->CodeGen(context);
+        // context.popBlock();
+    // }
+
+    return ret;
+}
+
+

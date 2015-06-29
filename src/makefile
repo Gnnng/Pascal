@@ -1,6 +1,7 @@
 NAME = pascal
 
-LLVM_CONFIG = /usr/local/opt/llvm/bin/llvm-config
+#LLVM_CONFIG = /usr/local/opt/llvm/bin/llvm-config
+LLVM_CONFIG = /usr/local/opt/llvm35/bin/llvm-config-3.5
 
 NO_WARNING =  -Wno-return-type \
 	-Wno-c++11-compat-deprecated-writable-strings \

@@ -1,7 +1,7 @@
 SRC_DIR = src
 LLC = /usr/local/opt/llvm/bin/llc
 all: compiler
-	make ll llvm.pas
+	 make ll llvm.pas
 
 compiler:
 	$(MAKE) -C $(SRC_DIR)

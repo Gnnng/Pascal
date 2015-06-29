@@ -34,6 +34,7 @@ ast::Node* ast_root;
     ast::RoutineList* 		ast_RoutineList;
     ast::NameList* 			ast_NameList;
     ast::ExpressionList* 	ast_ExpressionList;
+    ast::IfStmt* 			ast_IfStmt;
 }
 
 %token PROGRAM IDD DOT EQUAL LTHAN LEQU GT GE PLUS MINUS MUL DIV RIGHTP LEFTP 
@@ -53,20 +54,20 @@ ast::Node* ast_root;
 // default type is ast node
 %type <ast_Node> label_part const_part const_expr_list const_value field_decl 
 %type <ast_Node> field_decl_list record_type_decl array_type_decl 
-%type <ast_Node> type_definition  if_stmt else_clause 
+%type <ast_Node> type_definition 
 %type <ast_Node> repeat_stmt while_stmt for_stmt direction case_stmt 
 %type <ast_Node> case_expr_list case_expr goto_stmt 
 
 %type <ast_Program> 		program program_head routine routine_head sub_routine
 %type <ast_TypeDecl> 		type_part type_decl type_decl_list simple_type_decl 
-%type <ast_Statement> 		stmt non_label_stmt proc_stmt
+%type <ast_Statement> 		proc_stmt stmt non_label_stmt else_clause 
 %type <ast_AssignmentStmt> 	assign_stmt 
+%type <ast_IfStmt>			if_stmt;
 %type <ast_Expression> 		expression expr term factor 
 %type <ast_Routine> 		function_decl function_head procedure_head procedure_decl
-
 %type <ast_VarDeclList> 	parameters para_decl_list para_type_list
-%type <ast_RoutineList> 	routine_part
-%type <ast_StatementList> 	routine_body compound_stmt stmt_list
+%type <ast_RoutineList> 	routine_part 
+%type <ast_StatementList> 	routine_body compound_stmt stmt_list  
 %type <ast_VarDeclList> 	var_part var_decl_list var_decl
 %type <ast_NameList> 		name_list
 %type <ast_ExpressionList>  expression_list
@@ -261,8 +262,8 @@ stmt:
 non_label_stmt : 
 	assign_stmt { $$ = (ast::Statement *)$1; }
 	| proc_stmt 								{ $$ = (ast::Statement *) $1; }	
-//	| compound_stmt 				{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
-//	| if_stmt 						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}		
+//	| compound_stmt 				{ $$ = $1;}
+	| if_stmt 						{ $$ = (ast::Statement *)$1;}		
 //	| repeat_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
 //	| while_stmt					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}	
 //	| for_stmt						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
@@ -285,12 +286,12 @@ proc_stmt :
 
 // TODO: if_stmt may contains a shift/reduce conflict
 if_stmt : 
-	IF  expression THEN stmt else_clause 		{ $$ = ast_newNode5(ast_dbg($1),$2,ast_dbg($3),$4, $5);$$->debug = "if_stmt";}
+	IF  expression THEN stmt else_clause 		{ $$ = new ast::IfStmt($2,$4,$5);}
 ;
 
 else_clause : 
-	ELSE stmt 									{ $$ = ast_newNode2(ast_dbg($1),$2);$$->debug = "else_clause";}
-	| 											{ $$ = ast_dbg("empty else_clause");}
+	ELSE stmt 									{ $$ = $2;}
+	| 											{ $$ = NULL;}
 ;
 
 repeat_stmt : 
@@ -331,7 +332,7 @@ expression:
 //	|  expression  GT  expr  					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
 //	|  expression  LEQU  expr 					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
 //    |  expression  LTHAN  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
-//	|  expression  EQUAL  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
+	|  expression  EQUAL  expr  				{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::eq, $3);}
 //	|  expression  UNEQUAL  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}	
 ;
 
