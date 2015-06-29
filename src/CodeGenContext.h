@@ -27,23 +27,59 @@ class CodeGenBlock {
 public:
     BasicBlock *block;
     Value *returnValue;
+    CodeGenBlock * parent;
     std::map<std::string, Value*> locals;
 };
 
 class CodeGenContext {
     std::stack<CodeGenBlock *> blocks;
-    Function *mainFunction;
+    
 
 public:
+    Function* currentFunction;
+    Function *mainFunction;
     static llvm::Function* printf;
     Module *module;
     CodeGenContext() { module = new Module("main", getGlobalContext()); }
-    
     void generateCode(ast::Program& root);
     GenericValue runCode();
+    Value* getValue(std::string name){
+        CodeGenBlock *nowBlock= blocks.top();
+        while (nowBlock->locals.find(name) == nowBlock->locals.end()) {
+            if (nowBlock->parent == NULL){
+                throw std::logic_error("Undeclared variable " + name);
+                return nullptr;
+            } else
+            {
+                nowBlock = nowBlock->parent;
+            }
+        }
+        std::cout<<"location:"<<nowBlock->locals[name]<<"\n";
+        return nowBlock->locals[name];
+    }
+    void insert(std::string name, Value* alloc){
+        blocks.top()->locals[name] = alloc;
+    }
     std::map<std::string, Value*>& locals() { return blocks.top()->locals; }
     BasicBlock *currentBlock() { return blocks.top()->block; }
-    void pushBlock(BasicBlock *block) { blocks.push(new CodeGenBlock()); blocks.top()->returnValue = NULL; blocks.top()->block = block; }
+    void pushBlock(BasicBlock *block) { 
+        // std::cout<<"haha!\n";
+        CodeGenBlock* newb =new CodeGenBlock();
+        // std::cout<<"haha!\n";
+        if (blocks.empty()) {
+            std::cout<<"father\n";
+            newb->parent = NULL;
+        }else{
+            std::cout<<"new child block!\n";
+            newb->parent = blocks.top();     
+        }
+        
+        // std::cout<<"haha!\n";
+        blocks.push(newb); 
+        blocks.top()->returnValue = NULL; 
+        blocks.top()->block = block; 
+         // blocks.push(new CodeGenBlock()); blocks.top()->block = block;
+    }
     void popBlock() { CodeGenBlock *top = blocks.top(); blocks.pop(); delete top; }
     void setCurrentReturnValue(Value *value) { blocks.top()->returnValue = value; }
     Value* getCurrentReturnValue() { return blocks.top()->returnValue; }

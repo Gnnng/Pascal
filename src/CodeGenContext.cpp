@@ -33,9 +33,11 @@ void CodeGenContext::generateCode(ast::Program& root)
 
 	/* Push a new variable/block context */
 	pushBlock(bblock);
+	currentFunction = mainFunction;
 	root.CodeGen(*this); /* emit bytecode for the toplevel block */
-	ReturnInst::Create(getGlobalContext(), bblock);
+	ReturnInst::Create(getGlobalContext(), currentBlock());
 	popBlock();
+	// popBlock();
 	
 	/* Print the bytecode in a human-readable format 
 	   to see if our program compiled properly
@@ -46,7 +48,9 @@ void CodeGenContext::generateCode(ast::Program& root)
 	//pm.run(*module);
 
     // write IR to stderr
+    std::cout<<"code is gen~~~\n";
     module->dump();
+    std::cout<<"code is gen~!~\n";
 }
 
 /* Executes the AST by running the main function */
@@ -57,8 +61,7 @@ GenericValue CodeGenContext::runCode() {
 	ExecutionEngine *ee = EngineBuilder(module).create();
 	std::vector<GenericValue> noargs;
 	GenericValue v = ee->runFunction(mainFunction, noargs);
-	std::cout << 
-	"========================================" << std::endl;
+	std::cout << "========================================" << std::endl;
 	std::cout << "Running end.\n";
 	return v;
 }

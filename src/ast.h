@@ -290,10 +290,17 @@ public:
     enum class OpType : int {
         plus,
         minus,
+        mul,
         div,
         mod,
         bit_and,
-        bit_or
+        bit_or,
+        eq,
+        ne,
+        lt,
+        gt,
+        le,
+        ge
     };
 
     Expression *op1, *op2;
@@ -317,6 +324,7 @@ public:
             switch (op) {
             case OpType::plus: return "plus";
             case OpType::minus: return "minus";
+            case OpType::eq:    return "equal";
             }
         }(); 
     }
@@ -340,7 +348,17 @@ public:
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
+class IfStmt : public Statement {
+private:
+    int instanceCount;
+public:
+    Expression* condition; 
+    Statement* thenStmt; 
+    Statement* elseStmt;
+    IfStmt(Expression* condition,Statement* thenStmt,Statement* elseStmt) : condition(condition),thenStmt(thenStmt),elseStmt(elseStmt) {};
+    virtual llvm::Value *CodeGen(CodeGenContext& context);
+    virtual std::string toString() { return "If"; }
+};
 // namespace ast end
 }
-
 #endif
