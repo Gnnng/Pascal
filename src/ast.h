@@ -148,7 +148,9 @@ public:
     enum class TypeName : int{
         error,
         integer,
-        real
+        real,
+        character,
+        boolean
     };
     std::string     raw_name;
     TypeName        sys_name;
@@ -160,6 +162,9 @@ public:
     void init() { 
         if (sys_name == TypeName::error && !raw_name.empty()) {
             if (raw_name == "integer") sys_name = TypeName::integer;
+            if (raw_name == "real") sys_name = TypeName::real;
+            if (raw_name == "char") sys_name = TypeName::character;
+            if (raw_name == "boolean") sys_name = TypeName::boolean;
         }
     }
     
@@ -219,6 +224,24 @@ public:
     RealType(float val) : val(val) {}   
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
+
+class CharType : public Expression {
+public:
+    char val;
+
+    CharType(const char * p_str) : val(*p_str) {}   
+    virtual llvm::Value *CodeGen(CodeGenContext& context);
+};
+
+class BooleanType : public Expression {
+public:
+    bool val;
+
+    BooleanType(float val) : val(val) {}   
+    virtual llvm::Value *CodeGen(CodeGenContext& context);
+};
+
+
 
 
 class FuncCall : public Expression, public Statement {

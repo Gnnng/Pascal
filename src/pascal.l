@@ -66,12 +66,14 @@ int yycolumn = 1;
 "array"  { BeginToken(yytext);YYLVAL_DEBUG return ARRAY; }
 "procedure" { BeginToken(yytext);YYLVAL_DEBUG return PROCEDURE;}
 "type"   { BeginToken(yytext);YYLVAL_DEBUG return TYPE;}
+\'.\' 	 { BeginToken(yytext);YYLVAL_DEBUG return CHAR;}
 "record" { BeginToken(yytext);YYLVAL_DEBUG return RECORD;}
 "var"    { BeginToken(yytext);YYLVAL_DEBUG return VAR;}
 [0-9]+   { BeginToken(yytext);YYLVAL_DEBUG  return INTEGER; }
 "."      { BeginToken(yytext);YYLVAL_DEBUG return DOT; }
 "write"|"writeln" {BeginToken(yytext);YYLVAL_DEBUG return SYS_PROC; }
-"false"|"maxint"|"true"   { BeginToken(yytext);YYLVAL_DEBUG return SYS_CON; }
+"false"|"true"   { BeginToken(yytext);YYLVAL_DEBUG return SYS_BOOL; }
+"maxint" { BeginToken(yytext);YYLVAL_DEBUG return SYS_CON; }
 "abs"|"chr"|"ord"|"pred"|"sqr"|"succ"    { BeginToken(yytext);YYLVAL_DEBUG return SYS_FUNCT; }
 "boolean"|"char"|"integer"|"real"|"longint"    {BeginToken(yytext);YYLVAL_DEBUG return SYS_TYPE;}
 ([_a-zA-Z])([_a-zA-Z0-9])* { BeginToken(yytext);yylval.debug = strdup(yytext);return IDD; }

@@ -38,7 +38,7 @@ ast::Node* ast_root;
 %token PROGRAM IDD DOT EQUAL LTHAN LEQU GT GE PLUS MINUS MUL DIV RIGHTP LEFTP 
 %token ASSIGN COLON COMMA SEMI UNTIL OR AND MOD OF READ REPEAT TO UNEQUAL 
 %token IF THEN ELSE WHILE DO BEGINN END CASE DOWNTO FOR GOTO INTEGER LB RB NOT 
-%token NUMBER SYS_CON SYS_FUNCT SYS_PROC SYS_TYPE CHAR CONST STRING REAL ARRAY 
+%token NUMBER SYS_CON SYS_BOOL SYS_FUNCT SYS_PROC SYS_TYPE CHAR CONST STRING REAL ARRAY 
 %token VAR PROCEDURE RECORD FUNCTION TYPE
 
 %start program
@@ -114,10 +114,11 @@ const_expr_list:
 
 const_value:
 	INTEGER 									{ $$ = new ast::IntegerType(atoi($1)); $$->debug = $1; }
-//	| REAL 						{ $$ = ast_dbg($1);}
-//	| CHAR 						{ $$ = ast_dbg($1);}
+	| REAL 										{ $$ = new ast::RealType(atof($1)); $$->debug = $1; }
+	| CHAR 										{ $$ = new ast::CharType($1); $$->debug = $1; }
 //	| STRING 					{ $$ = ast_dbg($1);}
-//	| SYS_CON					{ $$ = ast_dbg($1);}
+	| SYS_BOOL									{ $$ = new ast::BoolType($1); }
+//	| SYS_CON
 ;
 
 

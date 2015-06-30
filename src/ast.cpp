@@ -5,6 +5,7 @@
 #include <llvm/IR/IRBuilder.h>
 
 #include <iostream>
+#include <sstream>
 #include <map>
 #include <functional>
 #include <stdexcept>
@@ -20,6 +21,9 @@ llvm::Type* ast::TypeDecl::toLLVMType() {
     this->init();    
     switch(this->sys_name) {
         case ast::TypeDecl::TypeName::integer: return llvm::Type::getInt32Ty(llvm::getGlobalContext()); break;
+        case ast::TypeDecl::TypeName::real: return llvm::Type::getFloatTy(llvm::getGlobalContext()); break;
+        case ast::TypeDecl::TypeName::character: return llvm::Type::getInt8Ty(llvm::getGlobalContext()); break;
+        case ast::TypeDecl::TypeName::boolean: return llvm::Type::getInt1Ty(llvm::getGlobalContext()); break;
         default: return llvm::Type::getVoidTy(llvm::getGlobalContext()); break;
     }
 }
@@ -41,6 +45,18 @@ llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
 	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), val, true);
 }
 
+llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
+	cout << "Creating integer: " << val << endl;
+	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), val, true);
+}
+llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
+	cout << "Creating integer: " << val << endl;
+	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), val, true);
+}
+llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
+	cout << "Creating integer: " << val << endl;
+	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), val, true);
+}
 llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
     llvm::Instruction::BinaryOps instr;
     switch (op) {
@@ -56,8 +72,11 @@ llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
     
     // Logical Operations
-    case OpType::eq:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_EQ,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+    
+    case OpType::eq:  {auto ret = llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_EQ,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock()); 
+                      std::cout << "boolean value is int1 " << ret->getType()->isIntegerTy() << std::endl;
+                      return ret;}
     case OpType::ne:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_NE,
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
     case OpType::lt:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SLT,
@@ -69,7 +88,6 @@ llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
     case OpType::ge:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SGE,
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
     }
-
     return nullptr;
 }
 
