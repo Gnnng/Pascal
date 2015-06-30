@@ -26,10 +26,10 @@ int main(int argc, char** argv) {
 	init_buffer();
 	yyparse();
 	extern int parseError;
-	if (parseError) return 1;
+	if (parseError) return 0;
 	cout << green("syntax check success!") << endl;
 	cout << ast_root << endl;
-
+	ast_root->print_node("", true, true);
 	InitializeNativeTarget();
 	CodeGenContext context;
 	//createCoreFunctions(context);

@@ -78,7 +78,7 @@ program: program_head routine DOT 				{ ast_root = $2; };
 program_head: PROGRAM IDD SEMI {} | {};
 
 routine: // ast_Program
-	routine_head routine_body 					{ $$ = $1; $$->routine_body = $2; $$->print_node("", true, true); }
+	routine_head routine_body 					{ $$ = $1; $$->routine_body = $2; /*$$->print_node("", true, true);*/ }
 ;
 
 sub_routine: // ast_Program
