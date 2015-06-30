@@ -24,8 +24,9 @@ class Statement;
 class Identifier;
 class Routine;
 class Expression;
+class StatementList;
 
-typedef std::vector<Statement *>    StatementList;
+
 typedef std::vector<VarDecl *>      VarDeclList;
 typedef std::vector<Identifier *>   IdentifierList;
 typedef std::vector<Routine *>      RoutineList;
@@ -54,6 +55,23 @@ public:
     virtual std::string toString() = 0;
     virtual llvm::Value *CodeGen(CodeGenContext& context) = 0;
 };
+class Statement : public Node {
+public:
+    Statement() {};
+
+    virtual llvm::Value *CodeGen(CodeGenContext& context) {}
+};
+
+class StatementList : public Statement{
+public:
+    std::vector<Statement*> list;
+    virtual llvm::Value *CodeGen(CodeGenContext& context) {
+        for (auto stmt: list){
+            stmt->CodeGen(context);
+        }
+    }
+    virtual std::string toString(){ return "stmt_list";}
+};
 
 class Program : public Node {
 public:
@@ -76,12 +94,14 @@ public:
         std::vector<Node *> list;
         for(auto i : *(var_part)) list.push_back((Node *)i);
         for(auto i : *(routine_part)) list.push_back((Node *)i);
-        for(auto i : *(routine_body)) list.push_back((Node *)i);
+        for(auto i : routine_body->list) list.push_back((Node *)i);
         return list;
     }
     virtual std::string toString() { return "Program start"; }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
+
+
 
 class Routine : public Program {
 public:
@@ -90,7 +110,7 @@ public:
     TypeDecl*       return_type;
     VarDeclList*    argument_list;
     RoutineType     routine_type; // function or procedure 
-
+    StatementList*   routine_body;
     Routine(RoutineType rt, Identifier* rn, VarDeclList* vdl, TypeDecl* td) :
         Program(),
         routine_name(rn),
@@ -116,7 +136,7 @@ public:
         for(auto i : *(argument_list)) list.push_back((Node *)i);
         for(auto i : *(var_part)) list.push_back((Node *)i);
         for(auto i : *(routine_part)) list.push_back((Node *)i);
-        for(auto i : *(routine_body)) list.push_back((Node *)i);
+        for(auto i : routine_body->list) list.push_back((Node *)i);
         return list;
     }
     virtual std::string toString() { return routine_type == RoutineType::function ? "Function" : "Procedure"; }
@@ -128,12 +148,7 @@ public:
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
-class Statement : public Node {
-public:
-    Statement() {};
 
-    virtual llvm::Value *CodeGen(CodeGenContext& context) {}
-};
 
 class LabelDecl : public Statement {
 
@@ -356,9 +371,46 @@ public:
     Statement* thenStmt; 
     Statement* elseStmt;
     IfStmt(Expression* condition,Statement* thenStmt,Statement* elseStmt) : condition(condition),thenStmt(thenStmt),elseStmt(elseStmt) {};
-    virtual llvm::Value *CodeGen(CodeGenContext& context);
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
     virtual std::string toString() { return "If"; }
 };
+class WhileStmt : public Statement {
+public:
+    Expression* condition;
+    Statement* loopStmt;
+    WhileStmt(Expression* condition,Statement* loopStmt):condition(condition),loopStmt(loopStmt){}
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
+    virtual std::string toString() { return "while"; }
+
+
+};
+class RepeatStmt : public Statement {
+public:
+    Expression* condition;
+    Statement* loopStmt;
+    RepeatStmt(Expression* condition,StatementList* loopStmt):condition(condition),loopStmt(loopStmt){}
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
+    virtual std::string toString() { return "repeat"; }
+
+
+};
 // namespace ast end
+class ForStmt : public Statement {
+public:
+    Identifier* loopVar;
+    Expression* startExp;
+    Expression* endExp;
+    int direction;
+    Statement* loopStmt;
+    ForStmt(Identifier* loopVar, Expression* startExp, Expression* endExp, int direction,Statement* loopStmt):
+        loopVar(loopVar),
+        startExp(startExp),
+        endExp(endExp),
+        loopStmt(loopStmt),
+        direction(direction){}
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
+    virtual std::string toString() { return "for"; }
+};
 }
 #endif
+
