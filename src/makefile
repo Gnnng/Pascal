@@ -6,6 +6,7 @@ LLVM_CONFIG = /usr/local/opt/llvm35/bin/llvm-config-3.5
 NO_WARNING =  -Wno-return-type \
 	-Wno-c++11-compat-deprecated-writable-strings \
 	-Wno-deprecated-register \
+	-Wno-switch \
 
 CXXFLAGS = `$(LLVM_CONFIG) --cppflags` -std=c++11 $(NO_WARNING)
 LDFLAGS = `$(LLVM_CONFIG) --ldflags`

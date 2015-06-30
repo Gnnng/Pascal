@@ -36,7 +36,6 @@ extern int debug;
  */
 extern int yylex(void);
 extern int yyparse(void);
-extern 
 
 
 /*
