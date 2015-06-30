@@ -1,5 +1,6 @@
 SRC_DIR = src
-LLC = /usr/local/opt/llvm/bin/llc
+LLC = /usr/local/bin/llc-3.5
+
 all: compiler
 	 make ll llvm.pas
 
