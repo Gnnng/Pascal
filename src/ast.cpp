@@ -20,11 +20,13 @@ using namespace std;
 llvm::Type* ast::TypeDecl::toLLVMType() {
     this->init();    
     switch(this->sys_name) {
-        case ast::TypeDecl::TypeName::integer: return llvm::Type::getInt32Ty(llvm::getGlobalContext()); break;
-        case ast::TypeDecl::TypeName::real: return llvm::Type::getFloatTy(llvm::getGlobalContext()); break;
-        case ast::TypeDecl::TypeName::character: return llvm::Type::getInt8Ty(llvm::getGlobalContext()); break;
-        case ast::TypeDecl::TypeName::boolean: return llvm::Type::getInt1Ty(llvm::getGlobalContext()); break;
-        default: return llvm::Type::getVoidTy(llvm::getGlobalContext()); break;
+        case ast::TypeDecl::TypeName::integer:  return llvm::Type::getInt32Ty(llvm::getGlobalContext());    break;
+        case ast::TypeDecl::TypeName::real:     return llvm::Type::getFloatTy(llvm::getGlobalContext());    break;
+        case ast::TypeDecl::TypeName::character:return llvm::Type::getInt8Ty(llvm::getGlobalContext());     break;
+        case ast::TypeDecl::TypeName::boolean:  return llvm::Type::getInt1Ty(llvm::getGlobalContext());     break;
+        case ast::TypeDecl::TypeName::range:    return llvm::Type::getInt32Ty(llvm::getGlobalContext());    break;
+        case ast::TypeDecl::TypeName::array:    return llvm::ArrayType::get(this->array_type->array_type->toLLVMType(), this->array_type->subscript->range_type->size()); break;
+        default:                                return llvm::Type::getVoidTy(llvm::getGlobalContext());     break;
     }
 }
 
@@ -41,22 +43,37 @@ llvm::Value* ast::Identifier::CodeGen(CodeGenContext& context) {
 }
 
 llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
-	cout << "Creating integer: " << val << endl;
+    std::cout << "Creating integer: " << val << std::endl;
 	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), val, true);
 }
 llvm::Value* ast::RealType::CodeGen(CodeGenContext& context) {
-	cout << "Creating real: " << val << endl;
+    std::cout << "Creating real: " << val << std::endl;
 	return llvm::ConstantInt::get(llvm::Type::getFloatTy(llvm::getGlobalContext()), val, true);
 }
 llvm::Value* ast::CharType::CodeGen(CodeGenContext& context) {
-	cout << "Creating char: " << val << endl;
+    std::cout << "Creating char: " << val << std::endl;
 	return llvm::ConstantInt::get(llvm::Type::getInt8Ty(llvm::getGlobalContext()), val, true);
 }
 llvm::Value* ast::BooleanType::CodeGen(CodeGenContext& context) {
-	cout << "Creating boolean: " << val << endl;
+    std::cout << "Creating boolean: " << val << std::endl;
 	return llvm::ConstantInt::get(llvm::Type::getInt1Ty(llvm::getGlobalContext()), val, true);
 }
-
+llvm::Value* ast::RangeType::CodeGen(CodeGenContext& context) {
+    if (this->isNameRange) {
+        //TODO: need to use correspoding value to assign to low and high
+        auto low_v = context.getConstValue(this->low_s);
+        auto high_v = context.getConstValue(this->high_s);
+        if (low_v->notRange() || high_v->notRange() ) {
+            throw std::domain_error("Not a valid range type: real");
+        }
+        this->low = context.getConstValue(this->low_s)->toRange();
+        this->high = context.getConstValue(this->high_s)->toRange();
+    }
+    if (this->low > this->high) {
+        throw std::logic_error("High range limit < low range limit");
+    }
+    std::cout << "Creating subscript range from " << this->low << " to " << this->high << std::endl;
+}
 llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
     llvm::Instruction::BinaryOps instr;
     switch (op) {

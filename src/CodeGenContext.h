@@ -29,12 +29,12 @@ public:
     Value *returnValue;
     CodeGenBlock * parent;
     std::map<std::string, Value*> locals;
+    std::map<std::string, ast::ConstValue*> const_locals;
 };
 
 class CodeGenContext {
     std::stack<CodeGenBlock *> blocks;
     
-
 public:
     Function* currentFunction;
     Function *mainFunction;
@@ -57,9 +57,18 @@ public:
         std::cout<<"location:"<<nowBlock->locals[name]<<"\n";
         return nowBlock->locals[name];
     }
-    void insert(std::string name, Value* alloc){
-        blocks.top()->locals[name] = alloc;
+    ast::ConstValue* getConstValue(std::string name) {
+        auto n_block = blocks.top();
+        while (n_block->const_locals.find(name) == n_block->const_locals.end()) {
+            if (n_block->parent == nullptr) {
+                throw std::logic_error("Undeclared const " + name);
+                return nullptr;
+            } else 
+                n_block = n_block->parent;
+        }
     }
+    void insert(std::string name, Value* alloc){ blocks.top()->locals[name] = alloc; }
+    void insertConst(std::string name, ast::ConstValue* const_v){ blocks.top()->const_locals[name] = const_v; }
     std::map<std::string, Value*>& locals() { return blocks.top()->locals; }
     BasicBlock *currentBlock() { return blocks.top()->block; }
     void pushBlock(BasicBlock *block) { 

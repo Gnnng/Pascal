@@ -4,6 +4,7 @@ c: char;
 a: integer;
 x: integer;
 b: integer;
+f: boolean;
 begin
 b:=20;
 a:=1;
@@ -25,6 +26,8 @@ begin
   b:=b+1;
   b:=b+1;
 end;
+f := 3 > 2;
+if (f) then writeln(1);
 if ((b>30) and (b<100)) then 
   if (a<120) then 
    writeln(a);
