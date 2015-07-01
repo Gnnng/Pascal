@@ -1,5 +1,5 @@
 program llvm;
-const wtf = 18;
+const wtf = maxint;
 var 
     d: char;
 begin
