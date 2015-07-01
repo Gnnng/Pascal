@@ -5,6 +5,7 @@
 #include <llvm/IR/IRBuilder.h>
 
 #include <iostream>
+#include <sstream>
 #include <map>
 #include <functional>
 #include <stdexcept>
@@ -20,6 +21,9 @@ llvm::Type* ast::TypeDecl::toLLVMType() {
     this->init();    
     switch(this->sys_name) {
         case ast::TypeDecl::TypeName::integer: return llvm::Type::getInt32Ty(llvm::getGlobalContext()); break;
+        case ast::TypeDecl::TypeName::real: return llvm::Type::getFloatTy(llvm::getGlobalContext()); break;
+        case ast::TypeDecl::TypeName::character: return llvm::Type::getInt8Ty(llvm::getGlobalContext()); break;
+        case ast::TypeDecl::TypeName::boolean: return llvm::Type::getInt1Ty(llvm::getGlobalContext()); break;
         default: return llvm::Type::getVoidTy(llvm::getGlobalContext()); break;
     }
 }
@@ -39,6 +43,19 @@ llvm::Value* ast::Identifier::CodeGen(CodeGenContext& context) {
 llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
 	cout << "Creating integer: " << val << endl;
 	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), val, true);
+}
+
+llvm::Value* ast::RealType::CodeGen(CodeGenContext& context) {
+	cout << "Creating real: " << val << endl;
+	return llvm::ConstantInt::get(llvm::Type::getFloatTy(llvm::getGlobalContext()), val, true);
+}
+llvm::Value* ast::CharType::CodeGen(CodeGenContext& context) {
+	cout << "Creating char: " << val << endl;
+	return llvm::ConstantInt::get(llvm::Type::getInt8Ty(llvm::getGlobalContext()), val, true);
+}
+llvm::Value* ast::BooleanType::CodeGen(CodeGenContext& context) {
+	cout << "Creating boolean: " << val << endl;
+	return llvm::ConstantInt::get(llvm::Type::getInt1Ty(llvm::getGlobalContext()), val, true);
 }
 
 llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
@@ -63,8 +80,11 @@ llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
     case OpType::bit_xor:     return llvm::BinaryOperator::Create( llvm::Instruction::Xor,
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock()); 
     // Logical Operations
-    case OpType::eq:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_EQ,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+    
+    case OpType::eq:  {auto ret = llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_EQ,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock()); 
+                      std::cout << "boolean value is int1 " << ret->getType()->isIntegerTy() << std::endl;
+                      return ret;}
     case OpType::ne:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_NE,
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
     case OpType::lt:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SLT,
@@ -77,7 +97,6 @@ llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
     //case OpType::and: return  llvm::cmp
     }
-
     return nullptr;
 }
 
@@ -252,8 +271,6 @@ llvm::Value* ast::SysProcCall::CodeGen(CodeGenContext& context) {
 
 llvm::Value* ast::TypeDecl::CodeGen(CodeGenContext& context) {}
 
-llvm::Value* ast::RealType::CodeGen(CodeGenContext& context) {}
-
 llvm::Value* ast::Expression::CodeGen(CodeGenContext& context) {}
 
 llvm::Value* ast::IfStmt::CodeGen(CodeGenContext& context) {
@@ -268,7 +285,7 @@ llvm::Value* ast::IfStmt::CodeGen(CodeGenContext& context) {
     llvm::BranchInst::Create(bmerge,context.currentBlock());
     context.popBlock();
     context.pushBlock(bfalse);
-    if (elseStmt != NULL)
+    if (elseStmt != nullptr)
         elseStmt->CodeGen(context);
     llvm::BranchInst::Create(bmerge,context.currentBlock());
     context.popBlock();

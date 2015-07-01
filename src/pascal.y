@@ -37,7 +37,7 @@ ast::Node* ast_root;
 %token PROGRAM IDD DOT EQUAL LTHAN LEQU GT GE PLUS MINUS MUL DIV RIGHTP LEFTP 
 %token ASSIGN COLON COMMA SEMI UNTIL OR AND MOD OF READ REPEAT TO UNEQUAL 
 %token IF THEN ELSE WHILE DO BEGINN END CASE DOWNTO FOR GOTO INTEGER LB RB NOT 
-%token NUMBER SYS_CON SYS_FUNCT SYS_PROC SYS_TYPE CHAR CONST STRING REAL ARRAY 
+%token NUMBER SYS_CON SYS_BOOL SYS_FUNCT SYS_PROC SYS_TYPE CHAR CONST STRING REAL ARRAY 
 %token VAR PROCEDURE RECORD FUNCTION TYPE
 
 %start program
@@ -46,7 +46,7 @@ ast::Node* ast_root;
 %type <debug> ASSIGN COLON COMMA SEMI IF THEN ELSE WHILE DO BEGINN FUNCTION LB
 %type <debug> NOT OR AND MOD OF READ REPEAT TO UNEQUAL UNTIL NUMBER SYS_CON RB
 %type <debug> SYS_FUNCT SYS_PROC SYS_TYPE CHAR CONST STRING REAL ARRAY VAR TYPE 
-%type <debug> RIGHTP LEFTP DOWNTO FOR GOTO INTEGER PROCEDURE RECORD END CASE 
+%type <debug> RIGHTP LEFTP DOWNTO FOR GOTO INTEGER PROCEDURE RECORD END CASE SYS_BOOL
 
 // default type is ast node
 %type <ast_Node> label_part const_part const_expr_list const_value field_decl 
@@ -112,10 +112,11 @@ const_expr_list:
 
 const_value:
 	INTEGER 									{ $$ = new ast::IntegerType(atoi($1)); $$->debug = $1; }
-//	| REAL 						{ $$ = ast_dbg($1);}
-//	| CHAR 						{ $$ = ast_dbg($1);}
+	| REAL 										{ $$ = new ast::RealType(atof($1)); $$->debug = $1; }
+	| CHAR 										{ $$ = new ast::CharType($1); $$->debug = $1; }
 //	| STRING 					{ $$ = ast_dbg($1);}
-//	| SYS_CON					{ $$ = ast_dbg($1);}
+	| SYS_BOOL									{ $$ = new ast::BooleanType($1); }
+//	| SYS_CON
 ;
 
 
@@ -177,7 +178,7 @@ var_part:
 ;
 
 var_decl_list:
-	var_decl_list var_decl 						{ $$ = $1; $1->insert($1->end(), $1->begin(), $1->end()); }
+	var_decl_list var_decl 						{ $$ = $1; $1->insert($1->end(), $2->begin(), $2->end()); }
 	| var_decl 									{ $$ = $1; }
 ;
 
@@ -289,7 +290,7 @@ if_stmt :
 
 else_clause : 
 	ELSE stmt 									{ $$ = $2;}
-	| 											{ $$ = NULL;}
+	| 											{ $$ = nullptr;}
 ;
 
 repeat_stmt : 

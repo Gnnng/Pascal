@@ -1,5 +1,6 @@
 program llvm;
 var a, b, c: integer;
+function add(var a, b: integer): integer;
 begin
 b:=20;
 a:=1;

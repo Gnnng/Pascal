@@ -46,7 +46,7 @@ public:
     Value* getValue(std::string name){
         CodeGenBlock *nowBlock= blocks.top();
         while (nowBlock->locals.find(name) == nowBlock->locals.end()) {
-            if (nowBlock->parent == NULL){
+            if (nowBlock->parent == nullptr){
                 throw std::logic_error("Undeclared variable " + name);
                 return nullptr;
             } else
@@ -68,7 +68,7 @@ public:
         // std::cout<<"haha!\n";
         if (blocks.empty()) {
             std::cout<<"father\n";
-            newb->parent = NULL;
+            newb->parent = nullptr;
         }else{
             std::cout<<"new child block!\n";
             newb->parent = blocks.top();     
@@ -76,7 +76,7 @@ public:
         
         // std::cout<<"haha!\n";
         blocks.push(newb); 
-        blocks.top()->returnValue = NULL; 
+        blocks.top()->returnValue = nullptr; 
         blocks.top()->block = block; 
          // blocks.push(new CodeGenBlock()); blocks.top()->block = block;
     }
