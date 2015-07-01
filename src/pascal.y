@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "parser.hpp"
 #include "ccalc.h"
+#include "CodeGenContext.h"
 using namespace std;
 
 int yydebug = 1;
@@ -32,6 +33,8 @@ ast::Node* ast_root;
     ast::RoutineList* 		ast_RoutineList;
     ast::NameList* 			ast_NameList;
     ast::ExpressionList* 	ast_ExpressionList;
+    ast::CaseList*          ast_CaseList;
+    ast::CaseStmt*          ast_CaseStmt;
 }
 
 %token PROGRAM IDD DOT EQUAL LTHAN LEQU GT GE PLUS MINUS MUL DIV RIGHTP LEFTP 
@@ -49,24 +52,26 @@ ast::Node* ast_root;
 %type <debug> RIGHTP LEFTP DOWNTO FOR GOTO INTEGER PROCEDURE RECORD END CASE SYS_BOOL
 
 // default type is ast node
-%type <ast_Node> label_part const_part const_expr_list const_value field_decl 
+%type <ast_Node> label_part const_part const_expr_list field_decl 
 %type <ast_Node> field_decl_list record_type_decl array_type_decl 
 %type <ast_Node> type_definition 
-%type <ast_Node> case_stmt 
-%type <ast_Node> case_expr_list case_expr goto_stmt 
 
 %type <ast_Program> 		program program_head routine routine_head sub_routine
 %type <ast_TypeDecl> 		type_part type_decl type_decl_list simple_type_decl 
-%type <ast_Statement> 		proc_stmt stmt non_label_stmt else_clause for_stmt repeat_stmt while_stmt if_stmt
+%type <ast_Statement> 		proc_stmt stmt non_label_stmt else_clause for_stmt repeat_stmt 
+%type <ast_Statement>		while_stmt if_stmt case_stmt goto_stmt
 %type <ast_AssignmentStmt> 	assign_stmt 
-%type <ast_Expression> 		expression expr term factor 
+%type <ast_Expression> 		expression expr term factor const_value
 %type <ast_Routine> 		function_decl function_head procedure_head procedure_decl
 %type <ast_VarDeclList> 	parameters para_decl_list para_type_list
 %type <ast_RoutineList> 	routine_part 
-%type <ast_StatementList> 	routine_body compound_stmt stmt_list 
+%type <ast_StatementList> 	routine_body compound_stmt stmt_list  
 %type <ast_VarDeclList> 	var_part var_decl_list var_decl
 %type <ast_NameList> 		name_list
 %type <ast_ExpressionList>  expression_list
+%type <ast_CaseStmt>		case_expr;
+%type <ast_CaseList>		case_expr_list;
+
 
 %%
 
@@ -252,9 +257,10 @@ stmt_list :
 
 stmt: 
 	non_label_stmt 								{ $$ = $1; }
-	//| INTEGER  COLON  non_label_stmt { 
-		//$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),$3);$$->debug = "stmt";
-	//}
+	| INTEGER  COLON  non_label_stmt { 
+		CodeGenContext::labels.push_back(atoi($1));
+		$$ = new ast::LabelStmt(atoi($1),$3);
+	}
 ;
 non_label_stmt : 
 	error
@@ -265,8 +271,8 @@ non_label_stmt :
 	| repeat_stmt 					{ $$ = (ast::Statement *)$1;}
 	| while_stmt					{ $$ = (ast::Statement *)$1;}	
 	| for_stmt						{ $$ = (ast::Statement *)$1;}
-//	| case_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}	
-//	| goto_stmt						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
+	| case_stmt 					{ $$ = (ast::Statement *)$1;}	
+	| goto_stmt						{ $$ = (ast::Statement *)$1;}
 ;
 
 assign_stmt : 
@@ -308,18 +314,18 @@ for_stmt :
 	}
 ;
 case_stmt : 
-	CASE expression OF case_expr_list  END		{ $$ = ast_newNode5(ast_dbg($1),$2,ast_dbg($3),$4,ast_dbg($5));$$->debug = "case_stmt";}
+	CASE expression OF case_expr_list  END		{ $$ = new ast::SwitchStmt($2,$4);}
 ;
 case_expr_list : 
-	case_expr_list  case_expr  					{ $$ = ast_newNode2($1,$2);$$->debug = "case_expr_list";}
-	|  case_expr 								{ $$ = ast_newNode1($1);$$->debug = "case_expr_list";}
+	case_expr_list  case_expr  					{ $$->push_back($2);}
+	|  case_expr 								{ $$= new ast::CaseList;$$->push_back($1);}
 ;
 case_expr : 
-	const_value  COLON  stmt  SEMI				{ $$ = ast_newNode4($1,ast_dbg($2),$3,ast_dbg($4));$$->debug = "case_expr";}
-	|  IDD  COLON  stmt  SEMI					{ $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "case_expr";}
+	const_value  COLON  stmt  SEMI				{ $$ = new ast::CaseStmt($1,$3);}
+	|  IDD  COLON  stmt  SEMI					{ $$ = new ast::CaseStmt(new ast::Identifier($1),$3);}
 ;
 goto_stmt : 
-	GOTO  INTEGER 								{$$ = ast_newNode2(ast_dbg($1),ast_dbg($2));$$->debug = "goto_stmt";}
+	GOTO  INTEGER 								{ $$ = new ast::GotoStmt(atoi($2));}
 ;
 
 expression_list: 

@@ -2,6 +2,7 @@
 #define __AST_H__
 
 #include "llvm/IR/Value.h"
+#include "llvm/IR/instruction.h"
 
 #include <string>
 #include <map>
@@ -25,6 +26,7 @@ class Identifier;
 class Routine;
 class Expression;
 class StatementList;
+class CaseStmt;
 
 
 typedef std::vector<VarDecl *>      VarDeclList;
@@ -32,6 +34,7 @@ typedef std::vector<Identifier *>   IdentifierList;
 typedef std::vector<Routine *>      RoutineList;
 typedef std::vector<std::string>    NameList;
 typedef std::vector<Expression *>   ExpressionList;
+typedef std::vector<CaseStmt *>     CaseList;
 // pure virtual class for all ast nodes
 class Node {
 public:
@@ -437,6 +440,40 @@ public:
         direction(direction){}
     virtual llvm::Value* CodeGen(CodeGenContext& context);
     virtual std::string toString() { return "for"; }
+};
+class CaseStmt : public Statement {
+public:
+    Expression* condition;
+    Statement* thenStmt;
+    llvm::BasicBlock* bblock,*bexit;
+    CaseStmt(Expression* condition,Statement* thenStmt):condition(condition),thenStmt(thenStmt){}
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
+    virtual std::string toString() { return "case statement"; }
+};
+class SwitchStmt : public Statement {
+public:
+    Expression* exp;
+    CaseList* list;
+    SwitchStmt(Expression* exp,CaseList* list):exp(exp),list(list){}
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
+    virtual std::string toString() { return "switch statement"; }
+};
+class LabelStmt : public Statement {
+public:
+    int label;
+    Statement* statement;
+    LabelStmt(int label,Statement* statement):label(label),statement(statement){}
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
+    virtual std::string toString() { return "label statement"; }
+
+};
+class GotoStmt : public Statement {
+public:
+    int label;
+    GotoStmt(int label):label(label){}
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
+    virtual std::string toString() { return "label statement"; }
+
 };
 }
 #endif

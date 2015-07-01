@@ -20,9 +20,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "ast.h"
-
 using namespace llvm;
-
 class CodeGenBlock {
 public:
     BasicBlock *block;
@@ -36,6 +34,8 @@ class CodeGenContext {
     
 
 public:
+    static std::vector<int> labels;
+    llvm::BasicBlock* labelBlock[10000];
     Function* currentFunction;
     Function *mainFunction;
     static llvm::Function* printf;
