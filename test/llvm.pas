@@ -21,6 +21,9 @@ begin
   b:=b+1;
   b:=b+1;
 end;
+if ((b>30) and (b<100)) then 
+  if (a<120) then 
+   writeln(a);
 writeln(a);
-writeln(b);
+writeln(b*3 mod 600);
 end.
