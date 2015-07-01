@@ -50,6 +50,7 @@ int yycolumn = 1;
 "mod"    { BeginToken(yytext);YYLVAL_DEBUG return MOD; }
 "and"    { BeginToken(yytext);YYLVAL_DEBUG return AND; }
 "or"     { BeginToken(yytext);YYLVAL_DEBUG return OR; }
+"not"	 { BeginToken(yytext);YYLVAL_DEBUG return NOT; }
 "read"|"readln"   { BeginToken(yytext);YYLVAL_DEBUG return READ; }
 "repeat" { BeginToken(yytext);YYLVAL_DEBUG return REPEAT; }
 "until"  { BeginToken(yytext);YYLVAL_DEBUG return UNTIL; }

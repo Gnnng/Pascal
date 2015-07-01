@@ -70,7 +70,14 @@ llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
     case OpType::div:     return llvm::BinaryOperator::Create( llvm::Instruction::SDiv,
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
-    
+    case OpType::mod:     return llvm::BinaryOperator::Create( llvm::Instruction::SRem,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());    
+    case OpType::bit_and:     return llvm::BinaryOperator::Create( llvm::Instruction::And,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());  
+    case OpType::bit_or:     return llvm::BinaryOperator::Create( llvm::Instruction::Or,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock()); 
+    case OpType::bit_xor:     return llvm::BinaryOperator::Create( llvm::Instruction::Xor,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock()); 
     // Logical Operations
     
     case OpType::eq:  {auto ret = llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_EQ,
@@ -87,6 +94,7 @@ llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
     case OpType::ge:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SGE,
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+    //case OpType::and: return  llvm::cmp
     }
     return nullptr;
 }
@@ -120,10 +128,7 @@ llvm::Value* ast::Program::CodeGen(CodeGenContext& context) {
         last = routine->CodeGen(context);
     }
     // deal with program statements
-    for(auto stmt : *(this->routine_body)) {
-        std::cout << "Generating code for " << typeid(stmt).name() << std::endl;
-        last = stmt->CodeGen(context);
-    }
+    routine_body->CodeGen(context);
     std::cout << "Creating program" << endl;
     return last;
 }
@@ -163,10 +168,7 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
         var_decl->CodeGen(context);
     }
     // deal with program statements
-    for(auto stmt : *(this->routine_body)) {
-        std::cout << "Generating code for body " << typeid(stmt).name() << std::endl;
-        stmt->CodeGen(context);
-    }
+    routine_body->CodeGen(context);
     // return value
     if (this->isFunction()) {
         std::cout << "Generating return value for function" << std::endl;
@@ -277,7 +279,6 @@ llvm::Value* ast::IfStmt::CodeGen(CodeGenContext& context) {
     BasicBlock *bmerge = BasicBlock::Create(getGlobalContext(), "mergeStmt", context.currentFunction);    
     auto ret = llvm::BranchInst::Create(btrue,bfalse,test,context.currentBlock());
 
-    // context.currentBlock()->getInstList().push_back(ret);
     context.pushBlock(btrue);
     thenStmt->CodeGen(context);
     llvm::BranchInst::Create(bmerge,context.currentBlock());
@@ -289,16 +290,83 @@ llvm::Value* ast::IfStmt::CodeGen(CodeGenContext& context) {
     context.popBlock();
     context.pushBlock(bmerge);
 
-    // context.popBlock();
-    // context.pushBlock(bexit);
- 
-    // if( hasFalseBranch ){   
-        // context.pushBlock(bfalse);
-        // thenStmt->CodeGen(context);
-        // context.popBlock();
-    // }
 
     return ret;
+}
+llvm::Value* ast::WhileStmt::CodeGen(CodeGenContext& context) {
+    BasicBlock *sloop = BasicBlock::Create(getGlobalContext(), "startloop", context.currentFunction);
+    BasicBlock *bloop = BasicBlock::Create(getGlobalContext(), "loopStmt", context.currentFunction);
+    BasicBlock *bexit = BasicBlock::Create(getGlobalContext(), "eixtStmt", context.currentFunction);    
+    llvm::BranchInst::Create(sloop,context.currentBlock());
+    context.pushBlock(sloop);
+    Value* test = condition->CodeGen( context );
+    llvm::Instruction *ret = llvm::BranchInst::Create(bloop,bexit,test,context.currentBlock());
+    context.popBlock();
+
+    context.pushBlock(bloop);
+    loopStmt->CodeGen(context);
+    llvm::BranchInst::Create(sloop,context.currentBlock());
+    context.popBlock();
+
+    context.pushBlock(bexit);
+
+    return ret;
+}
+llvm::Value* ast::RepeatStmt::CodeGen(CodeGenContext& context) {
+    BasicBlock *bloop = BasicBlock::Create(getGlobalContext(), "loopStmt", context.currentFunction);
+    BasicBlock *bexit = BasicBlock::Create(getGlobalContext(), "eixtStmt", context.currentFunction);    
+    llvm::BranchInst::Create(bloop,context.currentBlock());
+
+    context.pushBlock(bloop);
+    loopStmt->CodeGen(context);
+    Value* test = condition->CodeGen( context );
+    llvm::Instruction *ret = llvm::BranchInst::Create(bexit,bloop,test,context.currentBlock());
+    context.popBlock();
+
+    context.pushBlock(bexit);
+
+    return ret;
+}
+llvm::Value* ast::ForStmt::CodeGen(CodeGenContext& context) {
+    BasicBlock *sloop = BasicBlock::Create(getGlobalContext(), "startloop", context.currentFunction);
+    BasicBlock *bloop = BasicBlock::Create(getGlobalContext(), "loopStmt", context.currentFunction);
+    BasicBlock *bexit = BasicBlock::Create(getGlobalContext(), "eixtStmt", context.currentFunction);    
+//  initial for   
+    AssignmentStmt* initial = new AssignmentStmt(loopVar,startExp);
+    initial->CodeGen(context);
+    llvm::BranchInst::Create(sloop,context.currentBlock());
+//  for test
+    context.pushBlock(sloop);
+    BinaryOperator* compare = new BinaryOperator(loopVar, BinaryOperator::OpType::eq, endExp);
+    Value* test = compare->CodeGen(context);
+    llvm::Instruction *ret = llvm::BranchInst::Create(bexit,bloop,test,context.currentBlock());
+    context.popBlock();
+
+    context.pushBlock(bloop);
+    loopStmt->CodeGen(context);
+//update
+    BinaryOperator* update;
+    auto int1 = new IntegerType(1);
+    if (direction == 1) {
+        update = new BinaryOperator(loopVar, BinaryOperator::OpType::plus,int1);
+    }
+    else{
+        update = new BinaryOperator(loopVar, BinaryOperator::OpType::minus,int1);
+    }
+    auto updateStmt = new AssignmentStmt(loopVar,update);
+    updateStmt->CodeGen(context);
+    llvm::BranchInst::Create(sloop,context.currentBlock());
+    context.popBlock();
+
+    context.pushBlock(bexit);
+    loopStmt->CodeGen(context);
+    delete initial;
+    delete compare;
+    delete int1;
+    delete update;
+    delete updateStmt;
+    return ret;
+
 }
 
 
