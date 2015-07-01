@@ -115,7 +115,7 @@ const_expr_list:
 const_value:
 	INTEGER 									{ $$ = new ast::IntegerType(atoi($1)); $$->debug = $1; }
 	| REAL 										{ $$ = new ast::RealType(atof($1)); $$->debug = $1; }
-	| CHAR 										{ $$ = new ast::CharType($1); $$->debug = $1; }
+	| CHAR 										{ $$ = new ast::CharType($1+1); $$->debug = $1; }
 //	| STRING 					{ $$ = ast_dbg($1);}
 	| SYS_BOOL									{ $$ = new ast::BooleanType($1); }
 //	| SYS_CON
@@ -191,8 +191,6 @@ var_decl:
 routine_part:
 	routine_part function_decl 					{ $$ = $1; $1->push_back($2); }
 	| routine_part procedure_decl 				{ $$ = $1; $1->push_back($2); }
-//	| procedure_decl			{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
-//	| function_decl				{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
 	| 											{ $$ = new ast::RoutineList(); }
 ;
 

@@ -230,16 +230,16 @@ class CharType : public Expression {
 public:
     char val;
 
-    CharType(const char * p_str) : val(*p_str) {}   
+    CharType(const char * p_str) : val(*(p_str)) {}   
     virtual std::string toString() { std::stringstream oss; oss << val; return oss.str(); }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
 class BooleanType : public Expression {
 public:
-    bool val;
+    int val;
 
-    BooleanType(const char * str) : val(std::string(str) == "true" ? true : false) {}   
+    BooleanType(const char * str) : val(std::string(str) == "true" ? 1 : 0) {}   
     virtual std::string toString() { std::stringstream oss; oss << val; return oss.str(); }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };

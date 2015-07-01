@@ -1,4 +1,5 @@
 %option noyywrap yylineno
+L			[a-zA-Z_]
 %{
 #include <stdio.h>
 #include <stdarg.h>
@@ -66,7 +67,7 @@ int yycolumn = 1;
 "array"  { BeginToken(yytext);YYLVAL_DEBUG return ARRAY; }
 "procedure" { BeginToken(yytext);YYLVAL_DEBUG return PROCEDURE;}
 "type"   { BeginToken(yytext);YYLVAL_DEBUG return TYPE;}
-\'.\' 	 { BeginToken(yytext);YYLVAL_DEBUG return CHAR;}
+\'.\'	 	 { BeginToken(yytext);YYLVAL_DEBUG return CHAR;}
 "record" { BeginToken(yytext);YYLVAL_DEBUG return RECORD;}
 "var"    { BeginToken(yytext);YYLVAL_DEBUG return VAR;}
 [0-9]+   { BeginToken(yytext);YYLVAL_DEBUG  return INTEGER; }

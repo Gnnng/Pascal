@@ -44,7 +44,6 @@ llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
 	cout << "Creating integer: " << val << endl;
 	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), val, true);
 }
-
 llvm::Value* ast::RealType::CodeGen(CodeGenContext& context) {
 	cout << "Creating real: " << val << endl;
 	return llvm::ConstantInt::get(llvm::Type::getFloatTy(llvm::getGlobalContext()), val, true);
