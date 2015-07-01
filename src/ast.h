@@ -310,6 +310,7 @@ public:
         mod,
         bit_and,
         bit_or,
+        bit_xor,
         eq,
         ne,
         lt,

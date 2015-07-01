@@ -359,7 +359,7 @@ factor:
     |  SYS_FUNCT LEFTP expression_list RIGHTP 	{ $$ = new ast::SysFuncCall(new ast::Identifier($1), $3); }
 	|  const_value 								{ $$ = (ast::Expression *)$1; };
 	|  LEFTP  expression  RIGHTP 				{ $$ = (ast::Expression *)$2; }
-//	|  NOT  factor  							{$$ = ast_newNode2(ast_dbg($1),$2);$$->debug = "factor";}
+	|  NOT  factor  							{ $$ = new ast::BinaryOperator(/*need to be bool type*/new ast::IntegerType(1), ast::BinaryOperator::OpType::bit_xor, $2);}
 	|  MINUS  factor  							{$$ = new ast::BinaryOperator(new ast::IntegerType(0), ast::BinaryOperator::OpType::minus, $2);}
 //	|  IDD  LB  expression  RB 					{$$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "factor";}
 //	|  IDD  DOT  IDD 								{$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),ast_dbg($3));$$->debug = "factor";}

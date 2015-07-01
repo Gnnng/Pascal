@@ -60,8 +60,9 @@ llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());  
     case OpType::bit_or:     return llvm::BinaryOperator::Create( llvm::Instruction::Or,
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock()); 
-
-            // Logical Operations
+    case OpType::bit_xor:     return llvm::BinaryOperator::Create( llvm::Instruction::Xor,
+            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock()); 
+    // Logical Operations
     case OpType::eq:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_EQ,
             op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
     case OpType::ne:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_NE,
