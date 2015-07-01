@@ -180,7 +180,7 @@ var_part:
 ;
 
 var_decl_list:
-	var_decl_list var_decl 						{ $$ = $1; $1->insert($1->end(), $1->begin(), $1->end()); }
+	var_decl_list var_decl 						{ $$ = $1; $1->insert($1->end(), $2->begin(), $2->end()); }
 	| var_decl 									{ $$ = $1; }
 ;
 
@@ -292,7 +292,7 @@ if_stmt :
 
 else_clause : 
 	ELSE stmt 									{ $$ = $2;}
-	| 											{ $$ = NULL;}
+	| 											{ $$ = nullptr;}
 ;
 
 repeat_stmt : 

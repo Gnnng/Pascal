@@ -284,7 +284,7 @@ llvm::Value* ast::IfStmt::CodeGen(CodeGenContext& context) {
     llvm::BranchInst::Create(bmerge,context.currentBlock());
     context.popBlock();
     context.pushBlock(bfalse);
-    if (elseStmt != NULL)
+    if (elseStmt != nullptr)
         elseStmt->CodeGen(context);
     llvm::BranchInst::Create(bmerge,context.currentBlock());
     context.popBlock();
