@@ -222,6 +222,7 @@ public:
     float val;
 
     RealType(float val) : val(val) {}   
+    virtual std::string toString() { std::stringstream oss; oss << val; return oss.str(); }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
@@ -230,6 +231,7 @@ public:
     char val;
 
     CharType(const char * p_str) : val(*p_str) {}   
+    virtual std::string toString() { std::stringstream oss; oss << val; return oss.str(); }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
@@ -237,7 +239,8 @@ class BooleanType : public Expression {
 public:
     bool val;
 
-    BooleanType(float val) : val(val) {}   
+    BooleanType(const char * str) : val(std::string(str) == "true" ? true : false) {}   
+    virtual std::string toString() { std::stringstream oss; oss << val; return oss.str(); }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 

@@ -47,7 +47,7 @@ ast::Node* ast_root;
 %type <debug> ASSIGN COLON COMMA SEMI IF THEN ELSE WHILE DO BEGINN FUNCTION LB
 %type <debug> NOT OR AND MOD OF READ REPEAT TO UNEQUAL UNTIL NUMBER SYS_CON RB
 %type <debug> SYS_FUNCT SYS_PROC SYS_TYPE CHAR CONST STRING REAL ARRAY VAR TYPE 
-%type <debug> RIGHTP LEFTP DOWNTO FOR GOTO INTEGER PROCEDURE RECORD END CASE 
+%type <debug> RIGHTP LEFTP DOWNTO FOR GOTO INTEGER PROCEDURE RECORD END CASE SYS_BOOL
 
 // default type is ast node
 %type <ast_Node> label_part const_part const_expr_list const_value field_decl 
@@ -117,7 +117,7 @@ const_value:
 	| REAL 										{ $$ = new ast::RealType(atof($1)); $$->debug = $1; }
 	| CHAR 										{ $$ = new ast::CharType($1); $$->debug = $1; }
 //	| STRING 					{ $$ = ast_dbg($1);}
-	| SYS_BOOL									{ $$ = new ast::BoolType($1); }
+	| SYS_BOOL									{ $$ = new ast::BooleanType($1); }
 //	| SYS_CON
 ;
 

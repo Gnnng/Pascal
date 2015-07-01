@@ -45,18 +45,19 @@ llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
 	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), val, true);
 }
 
-llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
-	cout << "Creating integer: " << val << endl;
-	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), val, true);
+llvm::Value* ast::RealType::CodeGen(CodeGenContext& context) {
+	cout << "Creating real: " << val << endl;
+	return llvm::ConstantInt::get(llvm::Type::getFloatTy(llvm::getGlobalContext()), val, true);
 }
-llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
-	cout << "Creating integer: " << val << endl;
-	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), val, true);
+llvm::Value* ast::CharType::CodeGen(CodeGenContext& context) {
+	cout << "Creating char: " << val << endl;
+	return llvm::ConstantInt::get(llvm::Type::getInt8Ty(llvm::getGlobalContext()), val, true);
 }
-llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
-	cout << "Creating integer: " << val << endl;
-	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), val, true);
+llvm::Value* ast::BooleanType::CodeGen(CodeGenContext& context) {
+	cout << "Creating boolean: " << val << endl;
+	return llvm::ConstantInt::get(llvm::Type::getInt1Ty(llvm::getGlobalContext()), val, true);
 }
+
 llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
     llvm::Instruction::BinaryOps instr;
     switch (op) {
@@ -267,8 +268,6 @@ llvm::Value* ast::SysProcCall::CodeGen(CodeGenContext& context) {
 }
 
 llvm::Value* ast::TypeDecl::CodeGen(CodeGenContext& context) {}
-
-llvm::Value* ast::RealType::CodeGen(CodeGenContext& context) {}
 
 llvm::Value* ast::Expression::CodeGen(CodeGenContext& context) {}
 
