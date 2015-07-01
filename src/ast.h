@@ -53,7 +53,7 @@ public:
         auto children_list = this->getChildren();
         auto ch_prefix = tail ? prefix + ch_tailStr : prefix + ch_branchStr;
         for(size_t i = 0; i < children_list.size(); i++) {
-            children_list[i] ? children_list[i]->print_node(ch_prefix, i == children_list.size() - 1, false) : []() {}();
+            children_list[i] ? children_list[i]->print_node(ch_prefix, i == children_list.size() - 1, false) : []() {std::cout << "nullptr in tree";}();
         }
     }
 
@@ -99,6 +99,7 @@ public:
         routine_body(rb) {}
     virtual std::vector<Node *> getChildren() { 
         std::vector<Node *> list;
+        for(auto i : *(const_part)) list.push_back((Node *)i);
         for(auto i : *(var_part)) list.push_back((Node *)i);
         for(auto i : *(routine_part)) list.push_back((Node *)i);
         for(auto i : routine_body->list) list.push_back((Node *)i);
@@ -139,6 +140,7 @@ public:
         list.push_back((Node *)routine_name);
         list.push_back((Node *)return_type);
         for(auto i : *(argument_list)) list.push_back((Node *)i);
+        for(auto i : *(const_part)) list.push_back((Node *)i);
         for(auto i : *(var_part)) list.push_back((Node *)i);
         for(auto i : *(routine_part)) list.push_back((Node *)i);
         for(auto i : routine_body->list) list.push_back((Node *)i);
@@ -176,11 +178,12 @@ public:
 
     TypeDecl(ArrayType* atp) : array_type(atp) {}
     TypeDecl(RangeType* rtp) : range_type(rtp) {}
-
+    TypeDecl(TypeName tpname) : sys_name(tpname) { std::cout << "TypeDecl TypeName tpname called" << std::endl; }
     TypeDecl(const std::string &str) : raw_name(str){}
     TypeDecl(const char * ptr_c) : raw_name(*(new std::string(ptr_c))) {}
 
     void init() { 
+        std::cout << this << std::endl;
         if (sys_name != TypeName::error)
             return;
         if (raw_name == "integer")          sys_name = TypeName::integer;
@@ -234,15 +237,21 @@ public:
     ConstValue*     val = nullptr;
     TypeDecl*       type = nullptr;
 
-    ConstDecl(Identifier* name, ConstValue* cv)     : name(name), val(cv) {}
+    ConstDecl(Identifier* name, ConstValue* cv)     : name(name), val(cv), type(new TypeDecl(val->getConstType())) {}
 //
 //    ConstDecl(Identifier* name, IntegerType* it)    : name(name), val((ConstValue *)it), type(new TypeDecl("integer")) {}
 //    ConstDecl(Identifier* name, RealType* it)       : name(name), val((ConstValue *)it), type(new TypeDecl("real"))    {}
 //    ConstDecl(Identifier* name, CharType* it)       : name(name), val((ConstValue *)it), type(new TypeDecl("char"))    {}
 //    ConstDecl(Identifier* name, BooleanType* it)    : name(name), val((ConstValue *)it), type(new TypeDecl("boolean")) {}
-//
+    virtual std::vector<Node *> getChildren() { 
+        std::vector<Node *> list; 
+        list.push_back(name); 
+        list.push_back(val);
+        list.push_back(type);
+        return list;
+    }
     virtual std::string toString() { std::stringstream oss; oss << "Const " << name->name << ":" << val->toRange(); return oss.str(); }
-    virtual llvm::Value* CodeGen(CodeGenContext& context){ }
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
 };
 
 

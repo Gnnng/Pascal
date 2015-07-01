@@ -125,6 +125,16 @@ llvm::Value* ast::AssignmentStmt::CodeGen(CodeGenContext& context) {
     return new llvm::StoreInst(rhs->CodeGen(context), context.getValue(lhs->name), false, context.currentBlock());
 }
 
+llvm::Value* ast::ConstDecl::CodeGen(CodeGenContext& context) {
+    std::cout << "Creating constant declaration " << this->name->name << std::endl;
+    auto alloc = new llvm::AllocaInst(this->type->toLLVMType(), this->name->name.c_str(), context.currentBlock());
+    context.insert(this->name->name, alloc);
+    auto store = new llvm::StoreInst(this->val->CodeGen(context), alloc, false, context.currentBlock());
+
+    context.insertConst(this->name->name, this->val);
+    return store;
+}
+
 
 llvm::Value* ast::VarDecl::CodeGen(CodeGenContext& context) {
     std::cout << "Creating variable declaration " << this->name->name << std::endl;
@@ -135,6 +145,12 @@ llvm::Value* ast::VarDecl::CodeGen(CodeGenContext& context) {
 
 llvm::Value* ast::Program::CodeGen(CodeGenContext& context) {
     llvm::Value* last = nullptr;
+
+    /* const decl part */
+    for(auto const_decl: *(this->const_part)) {
+        std::cout << "Generating code for " << typeid(const_decl).name() << std::endl;
+        last = const_decl->CodeGen(context);
+    }
     // deal with variable declaration
     for(auto var_decl: *(this->var_part)) {
         std::cout << "Generating code for " << typeid(var_decl).name() << std::endl;

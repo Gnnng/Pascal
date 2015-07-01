@@ -76,10 +76,10 @@ public:
         CodeGenBlock* newb =new CodeGenBlock();
         // std::cout<<"haha!\n";
         if (blocks.empty()) {
-            std::cout<<"father\n";
+            // std::cout<<"father\n";
             newb->parent = nullptr;
         }else{
-            std::cout<<"new child block!\n";
+            // std::cout<<"new child block!\n";
             newb->parent = blocks.top();     
         }
         
