@@ -328,28 +328,28 @@ expression_list:
 expression:
 	error
 	|expr { $$ = $1; }
-//	|  expression  GE  expr  					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
-//	|  expression  GT  expr  					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
-//	|  expression  LEQU  expr 					{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}
+	|  expression  GE  expr  					{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::ge, $3);}
+	|  expression  GT  expr  					{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::gt, $3);}
+	|  expression  LEQU  expr 					{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::le, $3);}
     |  expression  LTHAN  expr  				{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::lt, $3);}
 	|  expression  EQUAL  expr  				{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::eq, $3);}                 
-//	|  expression  UNEQUAL  expr  				{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expression";}	
+	|  expression  UNEQUAL  expr  				{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::ne, $3);}	
 ;
 
 expr: 
 	expr PLUS term {$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::plus, $3); }
-//	|  expr  MINUS  term  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expr";}	
-//	|  expr  OR  term  							{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "expr";}
+	|  expr  MINUS  term  						{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::minus, $3);}	
+	|  expr  OR  term  							{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::bit_or, $3);}
 	|  term { $$ = $1; }
 ;
 
 term: 
 	error
 	|  factor { $$ = $1; }
-//	|  term  MUL  factor  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
-//	|  term  DIV  factor  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
-//	|  term  MOD  factor 						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
-// 	|  term  AND  factor  						{$$ = ast_newNode3($1,ast_dbg($2),$3);$$->debug = "term";}
+	|  term  MUL  factor  						{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::mul, $3);}
+	|  term  DIV  factor  						{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::div, $3);}
+	|  term  MOD  factor 						{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::mod, $3);}
+ 	|  term  AND  factor  						{$$ = new ast::BinaryOperator($1, ast::BinaryOperator::OpType::bit_and, $3);}
 ;
 
 factor: 
@@ -358,9 +358,9 @@ factor:
 	|  SYS_FUNCT 								{ $$ = new ast::SysFuncCall(new ast::Identifier($1)); }
     |  SYS_FUNCT LEFTP expression_list RIGHTP 	{ $$ = new ast::SysFuncCall(new ast::Identifier($1), $3); }
 	|  const_value 								{ $$ = (ast::Expression *)$1; };
-//	|  LEFTP  expression  RIGHTP 						{$$ = ast_newNode3(ast_dbg($1),$2,ast_dbg($3));$$->debug = "factor";}
+	|  LEFTP  expression  RIGHTP 				{ $$ = (ast::Expression *)$2; }
 //	|  NOT  factor  							{$$ = ast_newNode2(ast_dbg($1),$2);$$->debug = "factor";}
-//	|  MINUS  factor  							{$$ = ast_newNode2(ast_dbg($1),$2);$$->debug = "factor";}
+	|  MINUS  factor  							{$$ = new ast::BinaryOperator(new ast::IntegerType(0), ast::BinaryOperator::OpType::minus, $2);}
 //	|  IDD  LB  expression  RB 					{$$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "factor";}
 //	|  IDD  DOT  IDD 								{$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),ast_dbg($3));$$->debug = "factor";}
 ;
