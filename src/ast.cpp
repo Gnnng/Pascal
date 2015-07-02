@@ -48,7 +48,8 @@ llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
 }
 llvm::Value* ast::RealType::CodeGen(CodeGenContext& context) {
     std::cout << "Creating real: " << val << std::endl;
-	return llvm::ConstantInt::get(llvm::Type::getFloatTy(llvm::getGlobalContext()), val, true);
+    return llvm::ConstantFP::get(llvm::Type::getFloatTy(llvm::getGlobalContext()), val);
+	//return llvm::ConstantFP::get(llvm::Type::getFloatTy(llvm::getGlobalContext()), val, true);
 }
 llvm::Value* ast::CharType::CodeGen(CodeGenContext& context) {
     std::cout << "Creating char: " << val << std::endl;

@@ -70,6 +70,7 @@ int yycolumn = 1;
 \'.\'	 	 { BeginToken(yytext); yylval.debug = strdup(yytext + 1); return CHAR;}
 "record" { BeginToken(yytext);YYLVAL_DEBUG return RECORD;}
 "var"    { BeginToken(yytext);YYLVAL_DEBUG return VAR;}
+[0-9]+\.[0-9]+ { BeginToken(yytext); YYLVAL_DEBUG return REAL; }
 [0-9]+   { BeginToken(yytext);YYLVAL_DEBUG  return INTEGER; }
 "."      { BeginToken(yytext);YYLVAL_DEBUG return DOT; }
 "write"|"writeln" {BeginToken(yytext);YYLVAL_DEBUG return SYS_PROC; }
