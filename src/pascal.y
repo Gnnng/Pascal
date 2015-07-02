@@ -27,6 +27,7 @@ ast::Node* ast_root;
     ast::AssignmentStmt* 	ast_AssignmentStmt;
     ast::ConstDecl*         ast_ConstDecl;
     ast::ConstValue*        ast_ConstValue;
+    ast::RecordType*        ast_RecordType;
 
     ast::StatementList* 	ast_StatementList;
     ast::VarDeclList* 		ast_VarDeclList;
@@ -35,6 +36,7 @@ ast::Node* ast_root;
     ast::NameList* 			ast_NameList;
     ast::ExpressionList* 	ast_ExpressionList;
     ast::ConstDeclList*     ast_ConstDeclList;
+    ast::FieldDeclList*     ast_FieldDeclList;
 }
 
 %token PROGRAM IDD DOT EQUAL LTHAN LEQU GT GE PLUS MINUS MUL DIV RIGHTP LEFTP 
@@ -52,14 +54,13 @@ ast::Node* ast_root;
 %type <debug> RIGHTP LEFTP DOWNTO FOR GOTO INTEGER PROCEDURE RECORD END CASE SYS_BOOL
 
 // default type is ast node
-%type <ast_Node> label_part field_decl 
-%type <ast_Node> field_decl_list record_type_decl  
+%type <ast_Node> label_part  
 %type <ast_Node> type_definition 
 %type <ast_Node> case_stmt 
 %type <ast_Node> case_expr_list case_expr goto_stmt 
 
 %type <ast_Program> 		program program_head routine routine_head sub_routine
-%type <ast_TypeDecl> 		type_part type_decl type_decl_list simple_type_decl array_type_decl
+%type <ast_TypeDecl> 		type_part type_decl type_decl_list simple_type_decl array_type_decl record_type_decl
 %type <ast_Statement> 		proc_stmt stmt non_label_stmt else_clause for_stmt repeat_stmt while_stmt if_stmt
 %type <ast_AssignmentStmt> 	assign_stmt 
 %type <ast_Expression> 		expression expr term factor 
@@ -73,7 +74,7 @@ ast::Node* ast_root;
 %type <ast_NameList> 		name_list
 %type <ast_ExpressionList>  expression_list
 %type <ast_ConstDeclList>   const_expr_list const_part
-
+%type <ast_FieldDeclList>   field_decl_list field_decl
 %%
 
 NAME: IDD 										{ $$ = $1; };
@@ -120,28 +121,28 @@ const_value:
 
 
 type_part:
-	TYPE type_decl_list 						{ $$ = ast_dbg($1); $$->debug = "type_part";}
-	|											{ $$ = ast_dbg("empty type_part");}
+	TYPE type_decl_list 						{ $$ = $1; }
+	|											{ $$ = new ast::TypeDeclList; }
 ;
 
 type_decl_list:
-	type_decl_list type_definition 				{ $$ = ast_newNode2($1, $2);$$->debug = "type_decl_list";}
-	| type_definition							{ $$ = ast_newNode1($1);$$->debug = "type_decl_list";}
+	type_decl_list type_definition 				{ $$ = $1; $1->push_back($2); }
+	| type_definition							{ $$ = new ast::TypeDeclList; $$->push_back($1); }
 ;
 
 type_definition:
-	IDD EQUAL type_decl SEMI 					{ $$ = ast_newNode4(ast_dbg($1), ast_dbg($2), $3, ast_dbg($4));$$->debug = "type_definition";}
+	IDD EQUAL type_decl SEMI 					{ $$ = new ast::TypeDecl(new ast::Identifier($1), $3); }
 ;
 
 type_decl:
 	simple_type_decl 							{ $$ = $1; }
 	| array_type_decl							{ $$ = $1; }
-//	| record_type_decl			{ $$ = ast_newNode1($1);$$->debug = "type_decl";}
+	| record_type_decl			                { $$ = $1; }
 ;
 
 simple_type_decl:
 	SYS_TYPE									{ $$ = new ast::TypeDecl($1); }
-//	| NAME  					{ $$ = ast_dbg($1); $$->debug = "simple_type_decl";}
+	//| NAME  					                { $$ = ast_dbg($1); $$->debug = "simple_type_decl";}
 	//| LEFTP name_list RIGHTP 			{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "simple_type_decl";}
 	| INTEGER DOT DOT INTEGER 			        { $$ = new ast::TypeDecl(new ast::RangeType(atoi($1), atoi($4))); }
 	| CHAR DOT DOT CHAR 			            { $$ = new ast::TypeDecl(new ast::RangeType(*$1,*$4)); }
@@ -156,16 +157,16 @@ array_type_decl:
 ;
 
 record_type_decl:
-	RECORD field_decl_list END 					{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "record_type_decl";}
+	RECORD field_decl_list END 					{ $$ = new ast::TypeDecl(new ast::RecordType($2)); }
 ;
 
 field_decl_list:
-	field_decl_list field_decl 					{ $$ = ast_newNode2($1, $2);$$->debug = "field_decl_list";}
-	| field_decl 								{ $$ = ast_newNode1($1); $$->debug = "field_decl_list";}
+	field_decl_list field_decl 					{ $$ = $1; $1->insert($1->end(), $2->begin(), $2->end()); }
+	| field_decl 								{ $$ = $1; }
 ;
 
 field_decl:
-	name_list COLON type_decl SEMI 				{ $$ = ast_newNode4($1, ast_dbg($2), $3, ast_dbg($4));$$->debug = "field_decl";}
+	name_list COLON type_decl SEMI 				{ $$ = new ast::FieldDeclList(); for(auto name : *($1)) $$->push_back(new ast::FieldDecl(new ast::Identifier(name),$3)); }
 ;
 
 name_list: // ast_NameList
@@ -261,7 +262,8 @@ non_label_stmt :
 assign_stmt : 
 
 	IDD  ASSIGN  expression 					{ $$ = new ast::AssignmentStmt(new ast::Identifier($1), $3); }
-	//| ID LB expression RB ASSIGN expression     { $$ = ast_newNode6(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4),ast_dbg($5),$6);$$->debug = "assign_stmt";} //| ID  DOT  ID  ASSIGN  expression           { $$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),ast_dbg($4),$5);$$->debug = "assign_stmt";} 
+	| IDD LB expression RB ASSIGN expression    { $$ = new ast::AssignmentStmt(new ast::ArrayRef(new ast::Identifier($1), $3), $6); }
+    | IDD  DOT  IDD  ASSIGN  expression         { $$ = new ast::AssignmentStmt(new ast::RecordRef(new ast::Identifier($1), new ast::Identifier($3)), $5); }
 ;
 
 proc_stmt : 
@@ -349,9 +351,9 @@ factor:
 	|  const_value 								{ $$ = $1; };
 	|  LEFTP  expression  RIGHTP 				{ $$ = $2; }
 	|  NOT  factor  							{ $$ = new ast::BinaryOperator(new ast::BooleanType("true"), ast::BinaryOperator::OpType::bit_xor, $2);}
-	|  MINUS  factor  							{$$ = new ast::BinaryOperator(new ast::IntegerType(0), ast::BinaryOperator::OpType::minus, $2);}
-//	|  IDD  LB  expression  RB 					{$$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "factor";}
-//	|  IDD  DOT  IDD 								{$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),ast_dbg($3));$$->debug = "factor";}
+	|  MINUS  factor  							{ $$ = new ast::BinaryOperator(new ast::IntegerType(0), ast::BinaryOperator::OpType::minus, $2);}
+	|  IDD  LB  expression  RB 					{ $$ = new ast::ArrayRef(new ast::Identifier($1), $3); }
+	|  IDD  DOT  IDD 						    { $$ = new ast::RecordRef(new ast::Identifier($1), new ast::Identifier($3)); }
 ;
 %%
 

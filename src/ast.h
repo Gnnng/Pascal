@@ -32,6 +32,8 @@ class BooleanType;
 class RangeType;
 class ArrayType;
 class ConstValue;
+class FieldDecl;
+class RecordType;
 
 typedef std::vector<VarDecl *>      VarDeclList;
 typedef std::vector<Identifier *>   IdentifierList;
@@ -39,6 +41,7 @@ typedef std::vector<Routine *>      RoutineList;
 typedef std::vector<std::string>    NameList;
 typedef std::vector<Expression *>   ExpressionList;
 typedef std::vector<ConstDecl *>    ConstDeclList;
+typedef std::vector<FieldDecl *>    FieldDeclList;
 // pure virtual class for all ast nodes
 class Node {
 public:
@@ -175,8 +178,10 @@ public:
     TypeName        sys_name = TypeName::error;
     RangeType*      range_type = nullptr;
     ArrayType*      array_type = nullptr;
+    RecordType*     record_type = nullptr;
 
     TypeDecl(ArrayType* atp) : array_type(atp) {}
+    TypeDecl(RecordType* rtp) :  record_type(rtp) {}
     TypeDecl(RangeType* rtp) : range_type(rtp) {}
     TypeDecl(TypeName tpname) : sys_name(tpname) { std::cout << "TypeDecl TypeName tpname called" << std::endl; }
     TypeDecl(const std::string &str) : raw_name(str){}
@@ -208,6 +213,44 @@ public:
 
     ArrayType(TypeDecl* ss, TypeDecl* at) : subscript(ss), array_type(at) {}
     virtual std::string toString() { return "Array of " + (array_type ? array_type->raw_name : "#error"); }
+    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
+};
+
+class FieldDecl: public Statement {
+public:
+    Identifier* first;
+    TypeDecl*   second; 
+    FieldDecl(Identifier* first, TypeDecl* second) : first(first), second(second) {}
+    virtual std::string toString() { return "FieldDecl"; }
+    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
+};
+
+class RecordType: public Statement {
+public:
+    FieldDeclList*      field_list;
+
+    RecordType(FieldDeclList* list) : field_list(list)  {} 
+    virtual std::string toString() { return "RecordType"; }
+    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
+};
+
+class ArrayRef : public Expression {
+public:
+    Identifier*     array = nullptr;
+    Expression*     index = nullptr;
+
+    ArrayRef(Identifier* array, Expression* index) : array(array), index(index) {}
+    virtual std::string toString() { return "ArrayRef"; }
+    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
+};
+
+class RecordRef : public Expression {
+public:
+    Identifier*     record = nullptr;
+    Identifier*     field = nullptr;
+
+    RecordRef(Identifier* record, Identifier* field) : record(record), field(field) {}
+    virtual std::string toString() { return "RecordRef"; }
     virtual llvm::Value* CodeGen(CodeGenContext& context) {}
 };
 
@@ -452,11 +495,12 @@ public:
 
 class AssignmentStmt : public Statement {
 public:
-    Identifier* lhs; // left-hand side
-    Expression* rhs;
-
+    Identifier* lhs = nullptr; // left-hand side
+    Expression* rhs = nullptr;
+    bool        complex_assign = false;
     AssignmentStmt(Identifier* lhs, Expression* rhs) : lhs(lhs), rhs(rhs) {}
-    
+    AssignmentStmt(ArrayRef* lhs, Expression* rhs) : lhs((Identifier *)lhs), rhs(rhs), complex_assign(true) {}
+    AssignmentStmt(RecordRef* lhs, Expression* rhs) : lhs((Identifier *)lhs), rhs(rhs), complex_assign(true) {}
     virtual std::vector<Node *> getChildren() { 
         std::vector<Node *> list;
         list.push_back((Node *)lhs);

@@ -38,9 +38,10 @@ int main(int argc, char** argv) {
 		context.runCode();
 	} catch (const std::domain_error &de) {
 		cout << red(de.what()) << endl;		
+	} catch (const std::logic_error &le) {
+		cout << red(le.what()) << endl;	
 	} catch (...) {
 		cout << "other uncaught error" << endl;
 	}
-	
 	return 0;
 }

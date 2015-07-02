@@ -5,7 +5,7 @@ all: compiler
 	 make ll llvm.pas
 
 compiler:
-	$(MAKE) -C $(SRC_DIR)
+	$(MAKE) -C $(SRC_DIR) -j
 	mv $(SRC_DIR)/pascal .
 
 ll:
