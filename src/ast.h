@@ -289,6 +289,7 @@ public:
         std::vector<Node *> list;
         list.push_back(name);
         list.push_back(type);
+        return list;
     }
     virtual std::string toString() { return "TypeConst"; }
     virtual llvm::Value* CodeGen(CodeGenContext& context) {}
