@@ -15,19 +15,18 @@ void yyerror(char *s, ...) {
 	// int start=nTokenStart;
 	// int end=start + nTokenLength - 1;
 	// int i;
- //    fprintf(stdout, "...... !");
- //    for (i=0; i<nBuffer; i++)
- //      fprintf(stdout, ".");
- //    fprintf(stdout, "^\n");
- //    va_start(args, errorstring);
- //  	vsprintf(errmsg, errorstring, args);
- //  	va_end(args);
+   //  fprintf(stdout, "...... !");
+   //  for (int i=0; i<nBuffer; i++)
+   //    fprintf(stdout, ".");
+   //  fprintf(stdout, "^\n");
+   //  va_start(args, errorstring);
+  	// vsprintf(errmsg, errorstring, args);
+  	// va_end(args);
 	// fprintf(stdout, "Error: %s\n", errmsg);
 	// va_start(ap, s);
-	// fprintf(stderr, "error at: %s\n", yytext);
-	// fprintf(stderr, "%d: error: ", yylineno);
-	// vfprintf(stderr, s, ap);
-	// fprintf(stderr, "\n");
+	// vfprintf(stdout, s, ap);
+	fprintf(stdout, "At line %d: %s\n", yylineno, yytext);
+	// fprintf(stdout, "\n");
 }
 
 int count = 0;
