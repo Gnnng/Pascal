@@ -1,5 +1,10 @@
 program llvm;
 var a, b, c: integer;
+procedure count(b:integer);
+var i:integer;
+begin
+a:=1;
+end;
 begin
 b:=20;
 a:=1;

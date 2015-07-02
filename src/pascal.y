@@ -85,13 +85,14 @@ routine: // ast_Program
 ;
 
 sub_routine: // ast_Program
-	routine_head routine_body 					{ $$ = $1; $$->routine_body = $2; }
+	routine_head routine_body 					{ $$ = $1; $$->routine_body = $2; std::cout<<"rb:"<<$2<<";"<<$$->var_part<<"\n";}
 ;
 
 routine_head: //ast_Program
 	//label_part const_part type_part var_part routine_part { 
 	var_part routine_part { 
 		$$ = new ast::Program(nullptr, nullptr, nullptr, $1, $2, nullptr); 
+		std::cout<<"head:"<<$1<<"\n";
 	}
 ;
 
@@ -193,7 +194,7 @@ var_decl:
 
 routine_part:
 	routine_part function_decl 					{ $$ = $1; $1->push_back($2); }
-	| routine_part procedure_decl 				{ $$ = $1; $1->push_back($2); }
+	| routine_part procedure_decl 				{ $$ = $1; $1->push_back($2); std::cout<<"new pro"<<$2<<"\n" }
 //	| procedure_decl			{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
 //	| function_decl				{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
 	| 											{ $$ = new ast::RoutineList(); }
@@ -208,7 +209,7 @@ function_head:
 ;
 
 procedure_decl:
-	procedure_head SEMI sub_routine SEMI 		{ $$ = new ast::Routine($1, $3); }
+	procedure_head SEMI sub_routine SEMI 		{ $$ = new ast::Routine($1, $3); $$ = $1; std::cout<<"sub:"<<$$<<";"<<$3->var_part<<"\n";}
 ;
 
 procedure_head:
@@ -242,16 +243,16 @@ para_type_list: //TODO: var is different
 
 // boundary
 routine_body:  
-	compound_stmt { $$ = $1; }
+	compound_stmt { $$ = $1; std::cout<<"cop:"<<$$<<"\n";}
 ;
 
 compound_stmt : 
-	BEGINN stmt_list END { $$ = $2; }
+	BEGINN stmt_list END { $$ = $2; std::cout<<"cop:"<<$$<<"\n";}
 ;
 
 stmt_list : 
 	stmt_list stmt 								{yyerror("expected ';' at the end of the last line"); }
-	| stmt_list  stmt  SEMI 					{ $$ = $1; $1->list.push_back($2);}
+	| stmt_list  stmt  SEMI 					{ std::cout<<"list";$$ = $1;$$->getlist()->push_back($2);std::cout<<$$<<"\n";}
 	| 											{ $$ = new ast::StatementList(); }
 ;
 

@@ -63,6 +63,7 @@ public:
     Statement() {};
 
     virtual llvm::Value *CodeGen(CodeGenContext& context) {}
+    virtual std::vector<Statement*> *getlist(){}
 };
 
 class StatementList : public Statement{
@@ -74,6 +75,7 @@ public:
         }
     }
     virtual std::string toString(){ return "stmt_list";}
+    virtual std::vector<Statement*> *getlist(){ return &list;}
 };
 
 class Program : public Node {
@@ -95,9 +97,10 @@ public:
         routine_body(rb) {}
     virtual std::vector<Node *> getChildren() { 
         std::vector<Node *> list;
+
         for(auto i : *(var_part)) list.push_back((Node *)i);
-        for(auto i : *(routine_part)) list.push_back((Node *)i);
-        for(auto i : routine_body->list) list.push_back((Node *)i);
+        for(auto i : *(routine_part)) list.push_back((Node *)i);  
+        for(auto i : *(routine_body->getlist())) list.push_back((Node *)i);
         return list;
     }
     virtual std::string toString() { return "Program start"; }
@@ -113,7 +116,6 @@ public:
     TypeDecl*       return_type;
     VarDeclList*    argument_list;
     RoutineType     routine_type; // function or procedure 
-    StatementList*   routine_body;
     Routine(RoutineType rt, Identifier* rn, VarDeclList* vdl, TypeDecl* td) :
         Program(),
         routine_name(rn),
@@ -122,12 +124,20 @@ public:
         // routine_list(nullptr),
         routine_type(rt) {}
     Routine(Routine* r, Program* p) : 
-        Program(*p),
         routine_name(r->routine_name),
         return_type(r->return_type),
         argument_list(r->argument_list),
         // routine_list(r->routine_list),
-        routine_type(r->routine_type) {}
+        routine_type(r->routine_type) {
+            // lable_part(lp),
+            // const_part(cp),
+            // type_part(tp),
+            var_part= p->var_part;
+            // routine_part(rp),
+            // routine_body(rb)
+            std::cout<<"init"<<p->var_part<<"\n";
+            std::cout<<"init2"<<this<<";"<<this->var_part<<"\n";
+        }
 
     bool isFunction() { return routine_type == RoutineType::function; }
     bool isProcedure() { return routine_type == RoutineType::procedure; }
@@ -137,9 +147,12 @@ public:
         list.push_back((Node *)routine_name);
         list.push_back((Node *)return_type);
         for(auto i : *(argument_list)) list.push_back((Node *)i);
+
+        std::cout<<"hahaha"<<this<<";"<<var_part<<"\n";
         for(auto i : *(var_part)) list.push_back((Node *)i);
         for(auto i : *(routine_part)) list.push_back((Node *)i);
-        for(auto i : routine_body->list) list.push_back((Node *)i);
+        for(auto i : *(routine_body->getlist())) list.push_back((Node *)i);
+        
         return list;
     }
     virtual std::string toString() { return routine_type == RoutineType::function ? "Function" : "Procedure"; }
