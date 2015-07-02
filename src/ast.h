@@ -34,6 +34,7 @@ class ArrayType;
 class ConstValue;
 class FieldDecl;
 class RecordType;
+class TypeConst;
 
 typedef std::vector<VarDecl *>      VarDeclList;
 typedef std::vector<Identifier *>   IdentifierList;
@@ -42,6 +43,7 @@ typedef std::vector<std::string>    NameList;
 typedef std::vector<Expression *>   ExpressionList;
 typedef std::vector<ConstDecl *>    ConstDeclList;
 typedef std::vector<FieldDecl *>    FieldDeclList;
+typedef std::vector<TypeConst *>    TypeDeclList;
 // pure virtual class for all ast nodes
 class Node {
 public:
@@ -86,14 +88,14 @@ public:
 class Program : public Node {
 public:
     LabelDecl*      lable_part;
-    ConstDeclList*      const_part;
-    TypeDecl*       type_part;
+    ConstDeclList*  const_part;
+    TypeDeclList*   type_part;
     VarDeclList*    var_part;
     RoutineList*    routine_part;
     StatementList*  routine_body;
 
     Program() {}
-    Program(LabelDecl* lp, ConstDeclList* cp, TypeDecl* tp, VarDeclList* vp, RoutineList* rp, StatementList* rb) :
+    Program(LabelDecl* lp, ConstDeclList* cp, TypeDeclList* tp, VarDeclList* vp, RoutineList* rp, StatementList* rb) :
         lable_part(lp),
         const_part(cp),
         type_part(tp),
@@ -102,10 +104,11 @@ public:
         routine_body(rb) {}
     virtual std::vector<Node *> getChildren() { 
         std::vector<Node *> list;
-        for(auto i : *(const_part)) list.push_back((Node *)i);
-        for(auto i : *(var_part)) list.push_back((Node *)i);
-        for(auto i : *(routine_part)) list.push_back((Node *)i);
-        for(auto i : routine_body->list) list.push_back((Node *)i);
+        for(auto i : *(const_part))         list.push_back((Node *)i);
+        for(auto i : *(type_part))          list.push_back((Node *)i);
+        for(auto i : *(var_part))           list.push_back((Node *)i);
+        for(auto i : *(routine_part))       list.push_back((Node *)i);
+        for(auto i : routine_body->list)    list.push_back((Node *)i);
         return list;
     }
     virtual std::string toString() { return "Program start"; }
@@ -271,6 +274,22 @@ public:
     virtual int toRange() = 0;
     /* canRange : bool, if subclass can not be a range, overwrite it and return true  */
     virtual bool notRange() { return false; } 
+};
+
+
+class TypeConst : public Statement {
+public:
+    Identifier*     name = nullptr;
+    TypeDecl*       type = nullptr;
+
+    TypeConst(Identifier* name, TypeDecl* td) : name(name), type(td) {}
+    virtual std::vector<Node *> getChildren() {
+        std::vector<Node *> list;
+        list.push_back(name);
+        list.push_back(type);
+    }
+    virtual std::string toString() { return "TypeConst"; }
+    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
 };
 
 

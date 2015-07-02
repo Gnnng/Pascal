@@ -28,6 +28,7 @@ ast::Node* ast_root;
     ast::ConstDecl*         ast_ConstDecl;
     ast::ConstValue*        ast_ConstValue;
     ast::RecordType*        ast_RecordType;
+    ast::TypeConst*         ast_TypeConst;
 
     ast::StatementList* 	ast_StatementList;
     ast::VarDeclList* 		ast_VarDeclList;
@@ -37,6 +38,7 @@ ast::Node* ast_root;
     ast::ExpressionList* 	ast_ExpressionList;
     ast::ConstDeclList*     ast_ConstDeclList;
     ast::FieldDeclList*     ast_FieldDeclList;
+    ast::TypeDeclList*      ast_TypeDeclList;
 }
 
 %token PROGRAM IDD DOT EQUAL LTHAN LEQU GT GE PLUS MINUS MUL DIV RIGHTP LEFTP 
@@ -55,18 +57,19 @@ ast::Node* ast_root;
 
 // default type is ast node
 %type <ast_Node> label_part  
-%type <ast_Node> type_definition 
 %type <ast_Node> case_stmt 
 %type <ast_Node> case_expr_list case_expr goto_stmt 
 
 %type <ast_Program> 		program program_head routine routine_head sub_routine
-%type <ast_TypeDecl> 		type_part type_decl type_decl_list simple_type_decl array_type_decl record_type_decl
+%type <ast_TypeDecl> 		type_decl  simple_type_decl array_type_decl record_type_decl
 %type <ast_Statement> 		proc_stmt stmt non_label_stmt else_clause for_stmt repeat_stmt while_stmt if_stmt
 %type <ast_AssignmentStmt> 	assign_stmt 
 %type <ast_Expression> 		expression expr term factor 
 %type <ast_Routine> 		function_decl function_head procedure_head procedure_decl
 %type <ast_ConstValue>      const_value
+%type <ast_TypeConst>       type_definition
 
+%type <ast_TypeDeclList>    type_part type_decl_list
 %type <ast_VarDeclList> 	parameters para_decl_list para_type_list
 %type <ast_RoutineList> 	routine_part 
 %type <ast_StatementList> 	routine_body compound_stmt stmt_list 
@@ -92,8 +95,8 @@ sub_routine: // ast_Program
 
 routine_head: //ast_Program
 	//label_part const_part type_part var_part routine_part { 
-	const_part var_part routine_part { 
-		$$ = new ast::Program(nullptr, $1, nullptr, $2, $3, nullptr); 
+	const_part type_part var_part routine_part { 
+		$$ = new ast::Program(nullptr, $1, $2, $3, $4, nullptr); 
 	}
 ;
 
@@ -121,17 +124,17 @@ const_value:
 
 
 type_part:
-	TYPE type_decl_list 						{ $$ = $1; }
-	|											{ $$ = new ast::TypeDeclList; }
+	TYPE type_decl_list 						{ $$ = $2; }
+	|											{ $$ = new ast::TypeDeclList(); }
 ;
 
 type_decl_list:
 	type_decl_list type_definition 				{ $$ = $1; $1->push_back($2); }
-	| type_definition							{ $$ = new ast::TypeDeclList; $$->push_back($1); }
+	| type_definition							{ $$ = new ast::TypeDeclList(); $$->push_back($1); }
 ;
 
 type_definition:
-	IDD EQUAL type_decl SEMI 					{ $$ = new ast::TypeDecl(new ast::Identifier($1), $3); }
+	IDD EQUAL type_decl SEMI 					{ $$ = new ast::TypeConst(new ast::Identifier($1), $3); }
 ;
 
 type_decl:
