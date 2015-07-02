@@ -145,7 +145,7 @@ type_decl:
 
 simple_type_decl:
 	SYS_TYPE									{ $$ = new ast::TypeDecl($1); }
-	//| NAME  					                { $$ = ast_dbg($1); $$->debug = "simple_type_decl";}
+	| NAME  					                { $$ = new ast::TypeDecl(std::string($1)); }
 	//| LEFTP name_list RIGHTP 			{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "simple_type_decl";}
 	| INTEGER DOT DOT INTEGER 			        { $$ = new ast::TypeDecl(new ast::RangeType(atoi($1), atoi($4))); }
 	| CHAR DOT DOT CHAR 			            { $$ = new ast::TypeDecl(new ast::RangeType(*$1,*$4)); }

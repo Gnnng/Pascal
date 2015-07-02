@@ -174,7 +174,8 @@ public:
         boolean,
         range,
         array,
-        record
+        record,
+        user_defined
     };
 
     std::string     raw_name = "";
@@ -198,6 +199,7 @@ public:
         else if (raw_name == "real")        sys_name = TypeName::real;
         else if (raw_name == "char")        sys_name = TypeName::character;
         else if (raw_name == "boolean")     sys_name = TypeName::boolean;
+        else if (raw_name.size() > 0)       sys_name = TypeName::user_defined;
         else if (range_type)                sys_name = TypeName::range;
         else if (array_type)                sys_name = TypeName::array;
         //else if (record_type)               sys_name = TypeName::record;
