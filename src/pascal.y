@@ -134,20 +134,20 @@ type_decl_list:
 ;
 
 type_definition:
-	IDD EQUAL type_decl SEMI 					{ $$ = new ast::TypeConst(new ast::Identifier($1), $3); }
+	IDD EQUAL type_decl SEMI 					{ $$ = new ast::TypeConst(new ast::Identifier($1), $3);  }
 ;
 
-type_decl:
-	simple_type_decl 							{ $$ = $1; }
-	| array_type_decl							{ $$ = $1; }
+type_decl: //used by var_decl from here
+	array_type_decl	    						{ $$ = $1; DBMSG("array here"); }
+	| simple_type_decl 							{ $$ = $1; DBMSG("arary 1");}
 	| record_type_decl			                { $$ = $1; }
 ;
 
 simple_type_decl:
 	SYS_TYPE									{ $$ = new ast::TypeDecl($1); }
-	| NAME  					                { $$ = new ast::TypeDecl(std::string($1)); }
+	| NAME  					                { $$ = new ast::TypeDecl(std::string($1)); DBMSG("parse name " << $1);}
 	//| LEFTP name_list RIGHTP 			{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "simple_type_decl";}
-	| INTEGER DOT DOT INTEGER 			        { $$ = new ast::TypeDecl(new ast::RangeType(atoi($1), atoi($4))); }
+	| INTEGER DOT DOT INTEGER 			        { $$ = new ast::TypeDecl(new ast::RangeType(atoi($1), atoi($4))); DBMSG("reach here, + to +");}
 	| CHAR DOT DOT CHAR 			            { $$ = new ast::TypeDecl(new ast::RangeType(*$1,*$4)); }
 	| SYS_BOOL DOT DOT SYS_BOOL                 { $$ = new ast::TypeDecl(new ast::RangeType(std::string($1) == "true" ? 1 : 0, std::string($4) == "true" ? 1 : 0)); }
 	| MINUS INTEGER DOT DOT INTEGER		        { $$ = new ast::TypeDecl(new ast::RangeType(-atoi($1), atoi($5))); }
@@ -156,7 +156,7 @@ simple_type_decl:
 ;
 
 array_type_decl:
-	ARRAY LB simple_type_decl RB OF type_decl 	{ $$ = new ast::TypeDecl(new ast::ArrayType($3, $6)); $$->debug = "array_type_decl";}
+	ARRAY LB simple_type_decl RB OF type_decl 	{ $$ = new ast::TypeDecl(new ast::ArrayType($3, $6)); std::cout << "finished here" << std::endl;}
 ;
 
 record_type_decl:

@@ -187,7 +187,7 @@ public:
     TypeDecl(ArrayType* atp) : array_type(atp) {}
     TypeDecl(RecordType* rtp) :  record_type(rtp) {}
     TypeDecl(RangeType* rtp) : range_type(rtp) {}
-    TypeDecl(TypeName tpname) : sys_name(tpname) { std::cout << "TypeDecl TypeName tpname called" << std::endl; }
+    TypeDecl(TypeName tpname) : sys_name(tpname) { std::cout << "comment: used in const def" << std::endl; }
     TypeDecl(const std::string &str) : raw_name(str){}
     TypeDecl(const char * ptr_c) : raw_name(*(new std::string(ptr_c))) {}
 

@@ -1,12 +1,9 @@
 program hello;
 const 
 	ta = 3;
-type
-	ar = array [0..10] of
-	real;
-
 var 
 	c : ar;
+	ccc: array [1..3] of integer;
 	i : integer;
 	j : integer;
 	k : integer;
