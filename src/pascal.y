@@ -194,7 +194,7 @@ var_decl:
 
 routine_part:
 	routine_part function_decl 					{ $$ = $1; $1->push_back($2); }
-	| routine_part procedure_decl 				{ $$ = $1; $1->push_back($2); std::cout<<"new pro"<<$2<<"\n" }
+	| routine_part procedure_decl 				{ $$ = $1; $1->push_back($2);  }
 //	| procedure_decl			{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
 //	| function_decl				{ $$ = ast_newNode1($1);$$->debug = "routine_part";}
 	| 											{ $$ = new ast::RoutineList(); }
@@ -209,7 +209,7 @@ function_head:
 ;
 
 procedure_decl:
-	procedure_head SEMI sub_routine SEMI 		{ $$ = new ast::Routine($1, $3); $$ = $1; std::cout<<"sub:"<<$$<<";"<<$3->var_part<<"\n";}
+	procedure_head SEMI sub_routine SEMI 		{ $$ = new ast::Routine($1, $3); }
 ;
 
 procedure_head:
@@ -252,7 +252,7 @@ compound_stmt :
 
 stmt_list : 
 	stmt_list stmt 								{yyerror("expected ';' at the end of the last line"); }
-	| stmt_list  stmt  SEMI 					{ std::cout<<"list";$$ = $1;$$->getlist()->push_back($2);std::cout<<$$<<"\n";}
+	| stmt_list  stmt  SEMI 					{ $$ = $1;$$->getlist()->push_back($2);}
 	| 											{ $$ = new ast::StatementList(); }
 ;
 

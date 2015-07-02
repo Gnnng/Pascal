@@ -1,7 +1,7 @@
 program llvm;
 var a, b, c: integer;
-procedure count(b:integer);
-var i:integer;
+procedure count(var b:integer);
+
 begin
 a:=1;
 end;

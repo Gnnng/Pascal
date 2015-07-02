@@ -114,6 +114,7 @@ llvm::Value* ast::VarDecl::CodeGen(CodeGenContext& context) {
     std::cout << "Creating variable declaration " << this->name->name << std::endl;
     auto alloc = new llvm::AllocaInst(this->type->toLLVMType(), this->name->name.c_str(), context.currentBlock());
     context.insert(this->name->name,alloc);
+    std::cout << "Creating variable declaration suc!" << this->name->name << std::endl;
     return alloc;
 }
 
@@ -143,6 +144,7 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     auto block = llvm::BasicBlock::Create(getGlobalContext(), "entry", function, 0);
     auto oldFunc = context.currentFunction;
     context.currentFunction = function;
+    context.parent[function] = oldFunc;
     // push block and start routine
     context.pushBlock(block);
 
@@ -153,22 +155,24 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
         arg->CodeGen(context);
         arg_value = args_values++;
         arg_value->setName(arg->name->name.c_str());
-        auto inst = new llvm::StoreInst(arg_value, context.locals()[arg->name->name], false, block);
+        auto inst = new llvm::StoreInst(arg_value, context.getValue(arg->name->name), false, block);
     }
 
+    std::cout<<"is func?"<<this->isFunction()<<" part suc!\n"; 
     // add function return variable
     if (this->isFunction()) {
         std::cout << "Creating function return value declaration" << std::endl;
         auto alloc = new llvm::AllocaInst(this->return_type->toLLVMType(), this->routine_name->name.c_str(), context.currentBlock());
-        context.locals()[this->routine_name->name] = alloc;
+        // context.insert(this->routine_name->name) = alloc;
     }
-        
+    std::cout<<"func part suc!\n";    
     // deal with variable declaration
     for(auto var_decl: *(this->var_part)) {
         std::cout << "Generating code for decl " << typeid(var_decl).name() << std::endl;
         var_decl->CodeGen(context);
     }
     // deal with program statements
+    std::cout<<"var part suc!\n";
     routine_body->CodeGen(context);
     // return value
     if (this->isFunction()) {

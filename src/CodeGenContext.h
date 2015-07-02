@@ -36,6 +36,7 @@ class CodeGenContext {
 
 public:
     static std::vector<int> labels;
+    std::map<Function*,Function*> parent;
     llvm::BasicBlock* labelBlock[10000];
     Function* currentFunction;
     Function *mainFunction;
@@ -45,6 +46,9 @@ public:
     void generateCode(ast::Program& root);
     GenericValue runCode();
     Value* getValue(std::string name){
+        std::cout<<"found:"<<currentFunction->getValueSymbolTable().lookup(name)<<"\n";
+        std::cout<<"main:"<<mainFunction<<"\n";
+        std::cout<<"current:"<<currentFunction<<"\n";
         // CodeGenBlock *nowBlock= blocks.top();
         // while (nowBlock->locals.find(name) == nowBlock->locals.end()) {
         //     if (nowBlock->parent == nullptr){
@@ -56,7 +60,23 @@ public:
         //     }
         // }
         // std::cout<<"location:"<<nowBlock->locals[name]<<"\n";
-        return currentFunction->getValueSymbolTable().lookup(name);
+        llvm::Function* nowFunc = currentFunction;
+
+        while ((nowFunc->getValueSymbolTable().lookup(name))==NULL)
+        {
+            std::cout<<"found:"<<nowFunc->getValueSymbolTable().lookup(name)<<"\n";
+            if (nowFunc == mainFunction)
+            {
+                throw std::logic_error("Undeclared variable " + name);
+                return nullptr;
+            }
+            else
+            {
+                nowFunc = parent[nowFunc];
+            }
+        }
+        std::cout<<nowFunc->getValueSymbolTable().lookup(name)<<"found\n";
+        return nowFunc->getValueSymbolTable().lookup(name);
         // return nowBlock->locals[name];
     }
     void insert(std::string name, Value* alloc){

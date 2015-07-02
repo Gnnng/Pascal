@@ -123,7 +123,8 @@ public:
         argument_list(vdl),
         // routine_list(nullptr),
         routine_type(rt) {}
-    Routine(Routine* r, Program* p) : 
+    Routine(Routine* r, Program* p) :
+        Program(*p), 
         routine_name(r->routine_name),
         return_type(r->return_type),
         argument_list(r->argument_list),
@@ -132,7 +133,7 @@ public:
             // lable_part(lp),
             // const_part(cp),
             // type_part(tp),
-            var_part= p->var_part;
+            // var_part= p->var_part;
             // routine_part(rp),
             // routine_body(rb)
             std::cout<<"init"<<p->var_part<<"\n";
@@ -147,10 +148,9 @@ public:
         list.push_back((Node *)routine_name);
         list.push_back((Node *)return_type);
         for(auto i : *(argument_list)) list.push_back((Node *)i);
-
-        std::cout<<"hahaha"<<this<<";"<<var_part<<"\n";
         for(auto i : *(var_part)) list.push_back((Node *)i);
         for(auto i : *(routine_part)) list.push_back((Node *)i);
+            std::cout<<"hahaha"<<this<<";"<<var_part<<"\n";
         for(auto i : *(routine_body->getlist())) list.push_back((Node *)i);
         
         return list;
