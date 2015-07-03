@@ -332,6 +332,7 @@ class VarDecl : public Statement {
 public:
     Identifier*     name;
     TypeDecl*       type;
+    bool isGolbal;
 
     VarDecl(Identifier* name, TypeDecl* type) : name(name), type(type) {}
     virtual std::vector<Node *> getChildren() { 
@@ -430,7 +431,7 @@ public:
     Identifier* id;
     ExpressionList* argument_list;
 
-    ProcCall(Identifier* id) : id(id), argument_list(nullptr) {}
+    ProcCall(Identifier* id) : id(id), argument_list(new ExpressionList) {}
     ProcCall(Identifier* id, ExpressionList* argument_list) : id(id), argument_list(argument_list) {}
 
     virtual std::vector<Node *> getChildren() { 

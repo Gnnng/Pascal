@@ -61,21 +61,30 @@ public:
         // }
         // std::cout<<"location:"<<nowBlock->locals[name]<<"\n";
         llvm::Function* nowFunc = currentFunction;
-
-        while ((nowFunc->getValueSymbolTable().lookup(name))==NULL)
-        {
-            std::cout<<"found:"<<nowFunc->getValueSymbolTable().lookup(name)<<"\n";
-            if (nowFunc == mainFunction)
+        if ((nowFunc->getValueSymbolTable().lookup(name))==NULL) {
+            
+            if (module->getGlobalVariable(name)== NULL)
             {
                 throw std::logic_error("Undeclared variable " + name);
                 return nullptr;
             }
-            else
-            {
-                nowFunc = parent[nowFunc];
-            }
+            return module->getGlobalVariable(name);
+            // return module->getGlobalVariable(name);
         }
-        std::cout<<nowFunc->getValueSymbolTable().lookup(name)<<"found\n";
+        // while ((nowFunc->getValueSymbolTable().lookup(name))==NULL)
+        // {
+        //     std::cout<<"found:"<<nowFunc->getValueSymbolTable().lookup(name)<<"\n";
+        //     if (nowFunc == mainFunction)
+        //     {
+        //         throw std::logic_error("Undeclared variable " + name);
+        //         return nullptr;
+        //     }
+        //     else
+        //     { 
+        //         nowFunc = parent[nowFunc];
+        //     }
+        // }
+        // std::cout<<nowFunc->getValueSymbolTable().lookup(name)<<"found\n";
         return nowFunc->getValueSymbolTable().lookup(name);
         // return nowBlock->locals[name];
     }

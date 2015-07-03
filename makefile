@@ -2,7 +2,7 @@ SRC_DIR = src
 LLC = /usr/local/bin/llc-3.5
 
 all: compiler
-	 make ll test5.pas
+	 make ll test3.pas
 
 compiler:
 	$(MAKE) -C $(SRC_DIR) -j
