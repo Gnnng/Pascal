@@ -98,7 +98,7 @@ public:
     void pushBlock(BasicBlock *block) { 
         // std::cout<<"haha!\n";
         CodeGenBlock* newb =new CodeGenBlock();
-        // // std::cout<<"haha!\n";
+
         // if (blocks.empty()) {
         //     std::cout<<"father\n";
         //     newb->parent = nullptr;

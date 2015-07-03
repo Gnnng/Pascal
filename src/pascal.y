@@ -39,6 +39,11 @@ ast::Node* ast_root;
     ast::ConstDeclList*     ast_ConstDeclList;
     ast::FieldDeclList*     ast_FieldDeclList;
     ast::TypeDeclList*      ast_TypeDeclList;
+<<<<<<< HEAD
+=======
+    ast::CaseList*          ast_CaseList;
+    ast::CaseStmt*          ast_CaseStmt;
+>>>>>>> 767e1ec82d459c964eebe4cff428fe38bd67edd8
 }
 
 %token PROGRAM IDD DOT EQUAL LTHAN LEQU GT GE PLUS MINUS MUL DIV RIGHTP LEFTP 
@@ -57,14 +62,13 @@ ast::Node* ast_root;
 
 // default type is ast node
 %type <ast_Node> label_part  
-%type <ast_Node> case_stmt 
-%type <ast_Node> case_expr_list case_expr goto_stmt 
 
 %type <ast_Program> 		program program_head routine routine_head sub_routine
-%type <ast_TypeDecl> 		type_decl  simple_type_decl array_type_decl record_type_decl
+%type <ast_TypeDecl> 		type_decl   array_type_decl record_type_decl simple_type_decl
 %type <ast_Statement> 		proc_stmt stmt non_label_stmt else_clause for_stmt repeat_stmt while_stmt if_stmt
+%type <ast_Statement>		goto_stmt case_stmt 
 %type <ast_AssignmentStmt> 	assign_stmt 
-%type <ast_Expression> 		expression expr term factor 
+%type <ast_Expression> 		expression expr term factor
 %type <ast_Routine> 		function_decl function_head procedure_head procedure_decl
 %type <ast_ConstValue>      const_value
 %type <ast_TypeConst>       type_definition
@@ -78,6 +82,9 @@ ast::Node* ast_root;
 %type <ast_ExpressionList>  expression_list
 %type <ast_ConstDeclList>   const_expr_list const_part
 %type <ast_FieldDeclList>   field_decl_list field_decl
+%type <ast_CaseStmt>		case_expr 
+%type <ast_CaseList>		case_expr_list
+
 %%
 
 NAME: IDD 										{ $$ = $1; };
