@@ -7,7 +7,7 @@
 #include "parser.hpp"
 
 llvm::Function* CodeGenContext::printf;
-
+std::vector<int> CodeGenContext::labels;
 llvm::Function* createPrintf(CodeGenContext& context) {
 	std::vector<llvm::Type *> printf_arg_types;
     printf_arg_types.push_back(llvm::Type::getInt8PtrTy(llvm::getGlobalContext()));
@@ -20,6 +20,7 @@ llvm::Function* createPrintf(CodeGenContext& context) {
 /* Compile the AST into a module */
 void CodeGenContext::generateCode(ast::Program& root)
 {
+
 	std::cout << "Generating code...\n";
 	
 	/* Create the top level interpreter function to call as entry */
@@ -34,6 +35,9 @@ void CodeGenContext::generateCode(ast::Program& root)
 	/* Push a new variable/block context */
 	pushBlock(bblock);
 	currentFunction = mainFunction;
+	for (auto label:labels){
+		labelBlock[label]=BasicBlock::Create(getGlobalContext(), "label", mainFunction, 0);
+	}
 	root.CodeGen(*this); /* emit bytecode for the toplevel block */
 	ReturnInst::Create(getGlobalContext(), currentBlock());
 	popBlock();

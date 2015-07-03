@@ -1,9 +1,9 @@
 program llvm;
-var d: char;
-c: char;
-a: integer;
-x: integer;
-b: integer;
+var a, b, c: integer;
+procedure count(var b:integer);
+begin
+a:=1;
+end;
 begin
 b:=20;
 a:=1;
@@ -29,5 +29,9 @@ if ((b>30) and (b<100)) then
   if (a<120) then 
    writeln(a);
 writeln(a);
-writeln(b*3 mod 600);
+case a of 
+1: writeln(1);
+100: begin goto 1;writeln(99999);end;
+end;
+1:writeln(b*3 mod 600);
 end.

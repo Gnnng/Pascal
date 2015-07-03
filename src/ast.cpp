@@ -113,6 +113,7 @@ llvm::Value* ast::VarDecl::CodeGen(CodeGenContext& context) {
     std::cout << "Creating variable declaration " << this->name->name << std::endl;
     auto alloc = new llvm::AllocaInst(this->type->toLLVMType(), this->name->name.c_str(), context.currentBlock());
     context.insert(this->name->name,alloc);
+    std::cout << "Creating variable declaration suc!" << this->name->name << std::endl;
     return alloc;
 }
 
@@ -142,6 +143,7 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     auto block = llvm::BasicBlock::Create(getGlobalContext(), "entry", function, 0);
     auto oldFunc = context.currentFunction;
     context.currentFunction = function;
+    context.parent[function] = oldFunc;
     // push block and start routine
     context.pushBlock(block);
 
@@ -152,22 +154,24 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
         arg->CodeGen(context);
         arg_value = args_values++;
         arg_value->setName(arg->name->name.c_str());
-        auto inst = new llvm::StoreInst(arg_value, context.locals()[arg->name->name], false, block);
+        auto inst = new llvm::StoreInst(arg_value, context.getValue(arg->name->name), false, block);
     }
 
+    std::cout<<"is func?"<<this->isFunction()<<" part suc!\n"; 
     // add function return variable
     if (this->isFunction()) {
         std::cout << "Creating function return value declaration" << std::endl;
         auto alloc = new llvm::AllocaInst(this->return_type->toLLVMType(), this->routine_name->name.c_str(), context.currentBlock());
-        context.locals()[this->routine_name->name] = alloc;
+        // context.insert(this->routine_name->name) = alloc;
     }
-        
+    std::cout<<"func part suc!\n";    
     // deal with variable declaration
     for(auto var_decl: *(this->var_part)) {
         std::cout << "Generating code for decl " << typeid(var_decl).name() << std::endl;
         var_decl->CodeGen(context);
     }
     // deal with program statements
+    std::cout<<"var part suc!\n";
     routine_body->CodeGen(context);
     // return value
     if (this->isFunction()) {
@@ -367,6 +371,64 @@ llvm::Value* ast::ForStmt::CodeGen(CodeGenContext& context) {
     delete updateStmt;
     return ret;
 
+}
+llvm::Value* ast::CaseStmt::CodeGen(CodeGenContext& context){
+    
+    cout<<"in case"<<condition<<endl;
+    auto ret = thenStmt->CodeGen(context);
+     cout<<"in case 2"<<condition<<endl;
+    llvm::BranchInst::Create(bexit,context.currentBlock());
+     cout<<"in case 3"<<condition<<endl;
+    return ret;
+}
+llvm::Value* ast::SwitchStmt::CodeGen(CodeGenContext& context) {
+    BasicBlock* bexit = BasicBlock::Create(getGlobalContext(), "exit", context.currentFunction);
+
+    std::vector<BasicBlock *> bblocks;
+    cout<<(*list)[1]->condition<<endl;
+   
+    for (int i=0;i<(list->size());i++){ 
+        auto bblock = BasicBlock::Create(getGlobalContext(), "caseStmt", context.currentFunction);
+        bblocks.push_back(bblock);
+    }
+
+    for (int i=0;i<bblocks.size()-1;i++)
+    {    
+        cout<<"in bblocks\n";
+        cout<<(*list)[0]->condition<<"\n";
+        auto con = new BinaryOperator(exp, BinaryOperator::OpType::eq,(*list)[i]->condition);
+        BasicBlock* bnext = BasicBlock::Create(getGlobalContext(), "next", context.currentFunction);
+        llvm::BranchInst::Create(bblocks[i],bnext,con->CodeGen(context),context.currentBlock());
+        context.pushBlock(bnext);
+    }
+    auto con = new BinaryOperator(exp, BinaryOperator::OpType::eq,(*list)[bblocks.size()-1]->condition);
+    auto ret= llvm::BranchInst::Create(bblocks[bblocks.size()-1],bexit,con->CodeGen(context),context.currentBlock());
+    for (int i=0;i<bblocks.size();i++)
+    { 
+        context.pushBlock(bblocks[i]);
+        auto cst = (*list)[i];
+        cst->bexit = bexit;
+        cst->CodeGen(context);
+        cout<<"gggg~~~\n";
+        context.popBlock(); 
+    }
+    
+    context.pushBlock(bexit);
+
+    return ret;
+}
+llvm::Value* ast::GotoStmt::CodeGen(CodeGenContext& context){
+    llvm::Value* test= (new BooleanType("true"))->CodeGen(context);
+    BasicBlock* bafter = BasicBlock::Create(getGlobalContext(), "afterGoto", context.currentFunction);
+    auto ret = llvm::BranchInst::Create(context.labelBlock[label],context.currentBlock());
+    context.pushBlock(bafter);
+    return ret;
+}
+llvm::Value* ast::LabelStmt::CodeGen(CodeGenContext& context){
+    llvm::BranchInst::Create(context.labelBlock[label],context.currentBlock());
+
+    context.pushBlock(context.labelBlock[label]);
+    return statement->CodeGen(context);
 }
 
 
