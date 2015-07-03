@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "parser.hpp"
 #include "ccalc.h"
+#include "CodeGenContext.h"
 using namespace std;
 
 int yydebug = 1;
@@ -242,16 +243,17 @@ compound_stmt :
 ;
 
 stmt_list : 
-	//stmt_list stmt 								{yyerror("expected ';' at the end of the last line"); }
-	 stmt_list  stmt  SEMI 					{ $$ = $1; $1->list.push_back($2);}
+	stmt_list stmt 								{yyerror("expected ';' at the end of the last line"); }
+	| stmt_list  stmt  SEMI 					{ $$ = $1;$$->getlist()->push_back($2);}
 	| 											{ $$ = new ast::StatementList(); }
 ;
 
 stmt: 
 	non_label_stmt 								{ $$ = $1; }
-	//| INTEGER  COLON  non_label_stmt { 
-		//$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),$3);$$->debug = "stmt";
-	//}
+	| INTEGER  COLON  non_label_stmt { 
+		CodeGenContext::labels.push_back(atoi($1));
+		$$ = new ast::LabelStmt(atoi($1),$3);
+	}
 ;
 non_label_stmt : 
 	error
@@ -305,18 +307,18 @@ for_stmt :
 	}
 ;
 case_stmt : 
-	CASE expression OF case_expr_list  END		{ $$ = ast_newNode5(ast_dbg($1),$2,ast_dbg($3),$4,ast_dbg($5));$$->debug = "case_stmt";}
+	CASE expression OF case_expr_list  END		{ $$ = new ast::SwitchStmt($2,$4);}
 ;
 case_expr_list : 
-	case_expr_list  case_expr  					{ $$ = ast_newNode2($1,$2);$$->debug = "case_expr_list";}
-	|  case_expr 								{ $$ = ast_newNode1($1);$$->debug = "case_expr_list";}
+	case_expr_list  case_expr  					{ $$->push_back($2);}
+	|  case_expr 								{ $$= new ast::CaseList;$$->push_back($1);}
 ;
 case_expr : 
-	const_value  COLON  stmt  SEMI				{ $$ = ast_newNode4($1,ast_dbg($2),$3,ast_dbg($4));$$->debug = "case_expr";}
-	|  IDD  COLON  stmt  SEMI					{ $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "case_expr";}
+	const_value  COLON  stmt  SEMI				{ $$ = new ast::CaseStmt($1,$3);}
+	|  IDD  COLON  stmt  SEMI					{ $$ = new ast::CaseStmt(new ast::Identifier($1),$3);}
 ;
 goto_stmt : 
-	GOTO  INTEGER 								{$$ = ast_newNode2(ast_dbg($1),ast_dbg($2));$$->debug = "goto_stmt";}
+	GOTO  INTEGER 								{ $$ = new ast::GotoStmt(atoi($2));}
 ;
 
 expression_list: 
