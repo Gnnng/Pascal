@@ -2,6 +2,7 @@
 #define __AST_H__
 
 #include "llvm/IR/Value.h"
+#include "llvm/IR/instruction.h"
 
 #include <string>
 #include <map>
@@ -35,6 +36,8 @@ class ConstValue;
 class FieldDecl;
 class RecordType;
 class TypeConst;
+class CaseStmt;
+
 
 typedef std::vector<VarDecl *>      VarDeclList;
 typedef std::vector<Identifier *>   IdentifierList;
@@ -44,6 +47,7 @@ typedef std::vector<Expression *>   ExpressionList;
 typedef std::vector<ConstDecl *>    ConstDeclList;
 typedef std::vector<FieldDecl *>    FieldDeclList;
 typedef std::vector<TypeConst *>    TypeDeclList;
+typedef std::vector<CaseStmt *>     CaseList;
 // pure virtual class for all ast nodes
 class Node {
 public:
@@ -72,6 +76,7 @@ public:
     Statement() {};
 
     virtual llvm::Value *CodeGen(CodeGenContext& context) {}
+    virtual std::vector<Statement*> *getlist(){}
 };
 
 class StatementList : public Statement{
@@ -83,6 +88,7 @@ public:
         }
     }
     virtual std::string toString(){ return "stmt_list";}
+    virtual std::vector<Statement*> *getlist(){ return &list;}
 };
 
 class Program : public Node {
@@ -107,8 +113,8 @@ public:
         for(auto i : *(const_part))         list.push_back((Node *)i);
         for(auto i : *(type_part))          list.push_back((Node *)i);
         for(auto i : *(var_part))           list.push_back((Node *)i);
-        for(auto i : *(routine_part))       list.push_back((Node *)i);
-        for(auto i : routine_body->list)    list.push_back((Node *)i);
+        for(auto i : *(routine_part))       list.push_back((Node *)i);  
+        for(auto i : *(routine_body->getlist())) list.push_back((Node *)i);
         return list;
     }
     virtual std::string toString() { return "Program start"; }
@@ -122,7 +128,6 @@ public:
     TypeDecl*       return_type;
     VarDeclList*    argument_list;
     RoutineType     routine_type; // function or procedure 
-    StatementList*   routine_body;
     Routine(RoutineType rt, Identifier* rn, VarDeclList* vdl, TypeDecl* td) :
         Program(),
         routine_name(rn),
@@ -130,13 +135,14 @@ public:
         argument_list(vdl),
         // routine_list(nullptr),
         routine_type(rt) {}
-    Routine(Routine* r, Program* p) : 
-        Program(*p),
+    Routine(Routine* r, Program* p) :
+        Program(*p), 
         routine_name(r->routine_name),
         return_type(r->return_type),
         argument_list(r->argument_list),
         // routine_list(r->routine_list),
-        routine_type(r->routine_type) {}
+        routine_type(r->routine_type) {
+        }
 
     bool isFunction() { return routine_type == RoutineType::function; }
     bool isProcedure() { return routine_type == RoutineType::procedure; }
@@ -149,7 +155,9 @@ public:
         for(auto i : *(const_part)) list.push_back((Node *)i);
         for(auto i : *(var_part)) list.push_back((Node *)i);
         for(auto i : *(routine_part)) list.push_back((Node *)i);
-        for(auto i : routine_body->list) list.push_back((Node *)i);
+            std::cout<<"hahaha"<<this<<";"<<var_part<<"\n";
+        for(auto i : *(routine_body->getlist())) list.push_back((Node *)i);
+        
         return list;
     }
     virtual std::string toString() { return routine_type == RoutineType::function ? "Function" : "Procedure"; }
@@ -578,6 +586,40 @@ public:
         direction(direction){}
     virtual llvm::Value* CodeGen(CodeGenContext& context);
     virtual std::string toString() { return "for"; }
+};
+class CaseStmt : public Statement {
+public:
+    Expression* condition;
+    Statement* thenStmt;
+    llvm::BasicBlock* bblock,*bexit;
+    CaseStmt(Expression* condition,Statement* thenStmt):condition(condition),thenStmt(thenStmt){}
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
+    virtual std::string toString() { return "case statement"; }
+};
+class SwitchStmt : public Statement {
+public:
+    Expression* exp;
+    CaseList* list;
+    SwitchStmt(Expression* exp,CaseList* list):exp(exp),list(list){}
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
+    virtual std::string toString() { return "switch statement"; }
+};
+class LabelStmt : public Statement {
+public:
+    int label;
+    Statement* statement;
+    LabelStmt(int label,Statement* statement):label(label),statement(statement){}
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
+    virtual std::string toString() { return "label statement"; }
+
+};
+class GotoStmt : public Statement {
+public:
+    int label;
+    GotoStmt(int label):label(label){}
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
+    virtual std::string toString() { return "label statement"; }
+
 };
 }
 #endif
