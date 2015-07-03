@@ -243,8 +243,7 @@ compound_stmt :
 ;
 
 stmt_list : 
-	stmt_list stmt 								{yyerror("expected ';' at the end of the last line"); }
-	| stmt_list  stmt  SEMI 					{ $$ = $1;$$->getlist()->push_back($2);}
+	stmt_list  stmt  SEMI 					{ $$ = $1;$$->getlist()->push_back($2);}
 	| 											{ $$ = new ast::StatementList(); }
 ;
 
