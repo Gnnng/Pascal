@@ -39,11 +39,8 @@ ast::Node* ast_root;
     ast::ConstDeclList*     ast_ConstDeclList;
     ast::FieldDeclList*     ast_FieldDeclList;
     ast::TypeDeclList*      ast_TypeDeclList;
-<<<<<<< HEAD
-=======
     ast::CaseList*          ast_CaseList;
     ast::CaseStmt*          ast_CaseStmt;
->>>>>>> 767e1ec82d459c964eebe4cff428fe38bd67edd8
 }
 
 %token PROGRAM IDD DOT EQUAL LTHAN LEQU GT GE PLUS MINUS MUL DIV RIGHTP LEFTP 
