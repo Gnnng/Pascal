@@ -92,7 +92,6 @@ routine_head: //ast_Program
 	//label_part const_part type_part var_part routine_part { 
 	var_part routine_part { 
 		$$ = new ast::Program(nullptr, nullptr, nullptr, $1, $2, nullptr); 
-		std::cout<<"head:"<<$1<<"\n";
 	}
 ;
 
@@ -243,11 +242,11 @@ para_type_list: //TODO: var is different
 
 // boundary
 routine_body:  
-	compound_stmt { $$ = $1; std::cout<<"cop:"<<$$<<"\n";}
+	compound_stmt { $$ = $1; }
 ;
 
 compound_stmt : 
-	BEGINN stmt_list END { $$ = $2; std::cout<<"cop:"<<$$<<"\n";}
+	BEGINN stmt_list END { $$ = $2; }
 ;
 
 stmt_list : 

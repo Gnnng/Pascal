@@ -130,14 +130,6 @@ public:
         argument_list(r->argument_list),
         // routine_list(r->routine_list),
         routine_type(r->routine_type) {
-            // lable_part(lp),
-            // const_part(cp),
-            // type_part(tp),
-            // var_part= p->var_part;
-            // routine_part(rp),
-            // routine_body(rb)
-            std::cout<<"init"<<p->var_part<<"\n";
-            std::cout<<"init2"<<this<<";"<<this->var_part<<"\n";
         }
 
     bool isFunction() { return routine_type == RoutineType::function; }
