@@ -8,7 +8,6 @@
 #include "utils.h"
 #include "parser.hpp"
 #include "ccalc.h"
-#include "CodeGenContext.h"
 using namespace std;
 
 int yydebug = 1;
@@ -26,6 +25,10 @@ ast::Node* ast_root;
     ast::VarDecl* 			ast_VarDecl;
     ast::Identifier* 		ast_Identifier;
     ast::AssignmentStmt* 	ast_AssignmentStmt;
+    ast::ConstDecl*         ast_ConstDecl;
+    ast::ConstValue*        ast_ConstValue;
+    ast::RecordType*        ast_RecordType;
+    ast::TypeConst*         ast_TypeConst;
 
     ast::StatementList* 	ast_StatementList;
     ast::VarDeclList* 		ast_VarDeclList;
@@ -33,8 +36,9 @@ ast::Node* ast_root;
     ast::RoutineList* 		ast_RoutineList;
     ast::NameList* 			ast_NameList;
     ast::ExpressionList* 	ast_ExpressionList;
-    ast::CaseList*          ast_CaseList;
-    ast::CaseStmt*          ast_CaseStmt;
+    ast::ConstDeclList*     ast_ConstDeclList;
+    ast::FieldDeclList*     ast_FieldDeclList;
+    ast::TypeDeclList*      ast_TypeDeclList;
 }
 
 %token PROGRAM IDD DOT EQUAL LTHAN LEQU GT GE PLUS MINUS MUL DIV RIGHTP LEFTP 
@@ -52,27 +56,28 @@ ast::Node* ast_root;
 %type <debug> RIGHTP LEFTP DOWNTO FOR GOTO INTEGER PROCEDURE RECORD END CASE SYS_BOOL
 
 // default type is ast node
-%type <ast_Node> label_part const_part const_expr_list field_decl 
-%type <ast_Node> field_decl_list record_type_decl array_type_decl 
-%type <ast_Node> type_definition 
+%type <ast_Node> label_part  
+%type <ast_Node> case_stmt 
+%type <ast_Node> case_expr_list case_expr goto_stmt 
 
 %type <ast_Program> 		program program_head routine routine_head sub_routine
-%type <ast_TypeDecl> 		type_part type_decl type_decl_list simple_type_decl 
-%type <ast_Statement> 		proc_stmt stmt non_label_stmt else_clause for_stmt repeat_stmt 
-%type <ast_Statement>		while_stmt if_stmt case_stmt goto_stmt
+%type <ast_TypeDecl> 		type_decl  simple_type_decl array_type_decl record_type_decl
+%type <ast_Statement> 		proc_stmt stmt non_label_stmt else_clause for_stmt repeat_stmt while_stmt if_stmt
 %type <ast_AssignmentStmt> 	assign_stmt 
-%type <ast_Expression> 		expression expr term factor const_value
+%type <ast_Expression> 		expression expr term factor 
 %type <ast_Routine> 		function_decl function_head procedure_head procedure_decl
+%type <ast_ConstValue>      const_value
+%type <ast_TypeConst>       type_definition
+
+%type <ast_TypeDeclList>    type_part type_decl_list
 %type <ast_VarDeclList> 	parameters para_decl_list para_type_list
 %type <ast_RoutineList> 	routine_part 
-%type <ast_StatementList> 	routine_body compound_stmt stmt_list  
+%type <ast_StatementList> 	routine_body compound_stmt stmt_list 
 %type <ast_VarDeclList> 	var_part var_decl_list var_decl
 %type <ast_NameList> 		name_list
 %type <ast_ExpressionList>  expression_list
-%type <ast_CaseStmt>		case_expr;
-%type <ast_CaseList>		case_expr_list;
-
-
+%type <ast_ConstDeclList>   const_expr_list const_part
+%type <ast_FieldDeclList>   field_decl_list field_decl
 %%
 
 NAME: IDD 										{ $$ = $1; };
@@ -85,91 +90,86 @@ routine: // ast_Program
 ;
 
 sub_routine: // ast_Program
-	routine_head routine_body 					{ $$ = $1; $$->routine_body = $2; std::cout<<"rb:"<<$2<<";"<<$$->var_part<<"\n";}
+	routine_head routine_body 					{ $$ = $1; $$->routine_body = $2; }
 ;
 
 routine_head: //ast_Program
 	//label_part const_part type_part var_part routine_part { 
-	var_part routine_part { 
-		$$ = new ast::Program(nullptr, nullptr, nullptr, $1, $2, nullptr); 
+	const_part type_part var_part routine_part { 
+		$$ = new ast::Program(nullptr, $1, $2, $3, $4, nullptr); 
 	}
 ;
 
 label_part: 									{ $$ = ast_dbg("empty label_part"); }
 ;
 
-const_part:
-	CONST const_expr_list {
-		$$ = ast_newNode2(ast_dbg($1), $2);
-		$$->debug = "const_part";
-	}
-	| 											{ $$ = ast_dbg("empty const_part"); }
+const_part: // ConstDeclList
+	CONST const_expr_list                       { $$ = $2; }
+	| 											{ $$ = new ast::ConstDeclList(); }
 ;
 
-const_expr_list:
-	const_expr_list NAME EQUAL const_value SEMI { 
-		// printf("in const_expr_list recursively\n");
-		$$ = ast_newNode5($1, ast_dbg($2), ast_dbg($3), $4, ast_dbg($5)); $$->debug = "const_expr_list";}
-	| NAME EQUAL const_value SEMI {
-		// printf("in const_expr_list\n");
-		$$ = ast_newNode4(ast_dbg($1), ast_dbg($2), $3, ast_dbg($4));$$->debug = "const_expr_list"; }
+const_expr_list: // ConstDeclList
+	const_expr_list NAME EQUAL const_value SEMI { $$ = $1; $1->push_back(new ast::ConstDecl(new ast::Identifier($2), $4)); }
+	| NAME EQUAL const_value SEMI { $$ = new ast::ConstDeclList(); $$->push_back(new ast::ConstDecl(new ast::Identifier($1), $3)); }
 ;
 
 const_value:
 	INTEGER 									{ $$ = new ast::IntegerType(atoi($1)); $$->debug = $1; }
 	| REAL 										{ $$ = new ast::RealType(atof($1)); $$->debug = $1; }
-	| CHAR 										{ $$ = new ast::CharType($1+1); $$->debug = $1; }
+	| CHAR 										{ $$ = new ast::CharType($1); $$->debug = $1; }
 //	| STRING 					{ $$ = ast_dbg($1);}
 	| SYS_BOOL									{ $$ = new ast::BooleanType($1); }
-//	| SYS_CON
+	| SYS_CON                                   { $$ = new ast::IntegerType(32767); }
 ;
 
 
 type_part:
-	TYPE type_decl_list 						{ $$ = ast_dbg($1); $$->debug = "type_part";}
-	|											{ $$ = ast_dbg("empty type_part");}
+	TYPE type_decl_list 						{ $$ = $2; }
+	|											{ $$ = new ast::TypeDeclList(); }
 ;
 
 type_decl_list:
-	type_decl_list type_definition 				{ $$ = ast_newNode2($1, $2);$$->debug = "type_decl_list";}
-	| type_definition							{ $$ = ast_newNode1($1);$$->debug = "type_decl_list";}
+	type_decl_list type_definition 				{ $$ = $1; $1->push_back($2); }
+	| type_definition							{ $$ = new ast::TypeDeclList(); $$->push_back($1); }
 ;
 
 type_definition:
-	IDD EQUAL type_decl SEMI 					{ $$ = ast_newNode4(ast_dbg($1), ast_dbg($2), $3, ast_dbg($4));$$->debug = "type_definition";}
+	IDD EQUAL type_decl SEMI 					{ $$ = new ast::TypeConst(new ast::Identifier($1), $3);  }
 ;
 
-type_decl:
-	simple_type_decl 							{ $$ = $1; }
-//	| array_type_decl			{ $$ = ast_newNode1($1);$$->debug = "type_decl";}
-//	| record_type_decl			{ $$ = ast_newNode1($1);$$->debug = "type_decl";}
+type_decl: //used by var_decl from here
+	array_type_decl	    						{ $$ = $1; DBMSG("array here"); }
+	| simple_type_decl 							{ $$ = $1; DBMSG("arary 1");}
+	| record_type_decl			                { $$ = $1; }
 ;
 
 simple_type_decl:
 	SYS_TYPE									{ $$ = new ast::TypeDecl($1); }
-//	| NAME  					{ $$ = ast_dbg($1); $$->debug = "simple_type_decl";}
-//	| LEFTP name_list RIGHTP 			{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "simple_type_decl";}
-//	| const_value DOT DOT const_value 				{ $$ = ast_newNode4($1, ast_dbg($2), ast_dbg($3), $4);$$->debug = "simple_type_decl";}
-//	| MINUS const_value DOT DOT const_value			{ $$ = ast_newNode5(ast_dbg($1), $2, ast_dbg($3), ast_dbg($4), $5);$$->debug = "simple_type_decl";}
-//	| MINUS const_value DOT DOT MINUS const_value 	{ $$ = ast_newNode6(ast_dbg($1), $2, ast_dbg($3), ast_dbg($4), ast_dbg($5), $6);$$->debug = "simple_type_decl";}
-//	| NAME DOT DOT NAME 		{ $$ = ast_newNode4(ast_dbg($1), ast_dbg($2), ast_dbg($3), ast_dbg($4));$$->debug = "simple_type_decl";}
+	| NAME  					                { $$ = new ast::TypeDecl(std::string($1)); DBMSG("parse name " << $1);}
+	//| LEFTP name_list RIGHTP 			{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "simple_type_decl";}
+	| INTEGER DOT DOT INTEGER 			        { $$ = new ast::TypeDecl(new ast::RangeType(atoi($1), atoi($4))); DBMSG("reach here, + to +");}
+	| CHAR DOT DOT CHAR 			            { $$ = new ast::TypeDecl(new ast::RangeType(*$1,*$4)); }
+	| SYS_BOOL DOT DOT SYS_BOOL                 { $$ = new ast::TypeDecl(new ast::RangeType(std::string($1) == "true" ? 1 : 0, std::string($4) == "true" ? 1 : 0)); }
+	| MINUS INTEGER DOT DOT INTEGER		        { $$ = new ast::TypeDecl(new ast::RangeType(-atoi($1), atoi($5))); }
+	| MINUS INTEGER DOT DOT MINUS INTEGER	    { $$ = new ast::TypeDecl(new ast::RangeType(-atoi($1), -atoi($2))); }
+    | NAME DOT DOT NAME 		                { $$ = new ast::TypeDecl(new ast::RangeType(std::string($1), std::string($4))); }
 ;
 
 array_type_decl:
-	ARRAY LB simple_type_decl RB OF type_decl 	{ $$ = ast_newNode6(ast_dbg($1), ast_dbg($2), $3, ast_dbg($4), ast_dbg($5), $6); $$->debug = "array_type_decl";}
+	ARRAY LB simple_type_decl RB OF type_decl 	{ $$ = new ast::TypeDecl(new ast::ArrayType($3, $6)); std::cout << "finished here" << std::endl;}
 ;
 
 record_type_decl:
-	RECORD field_decl_list END 					{ $$ = ast_newNode3(ast_dbg($1), $2, ast_dbg($3));$$->debug = "record_type_decl";}
+	RECORD field_decl_list END 					{ $$ = new ast::TypeDecl(new ast::RecordType($2)); }
 ;
 
 field_decl_list:
-	field_decl_list field_decl 					{ $$ = ast_newNode2($1, $2);$$->debug = "field_decl_list";}
-	| field_decl 								{ $$ = ast_newNode1($1); $$->debug = "field_decl_list";}
+	field_decl_list field_decl 					{ $$ = $1; $1->insert($1->end(), $2->begin(), $2->end()); }
+	| field_decl 								{ $$ = $1; }
 ;
 
 field_decl:
-	name_list COLON type_decl SEMI 				{ $$ = ast_newNode4($1, ast_dbg($2), $3, ast_dbg($4));$$->debug = "field_decl";}
+	name_list COLON type_decl SEMI 				{ $$ = new ast::FieldDeclList(); for(auto name : *($1)) $$->push_back(new ast::FieldDecl(new ast::Identifier(name),$3)); }
 ;
 
 name_list: // ast_NameList
@@ -229,16 +229,6 @@ para_type_list: //TODO: var is different
 	| name_list COLON simple_type_decl 			{ $$ = new ast::VarDeclList(); for(auto name: *($1)) $$->push_back(new ast::VarDecl(new ast::Identifier(name), $3)); }
 ;
 
-//
-//var_para_list:
-//	VAR name_list 				{ $$ = ast_newNode2(ast_dbg($1), $2); $$->debug = "var_para_list";}
-//;
-//
-//val_para_list:
-//	name_list 					{ $$ = ast_newNode1($1); $$->debug = "val_para_list";}
-//;
-
-// boundary
 routine_body:  
 	compound_stmt { $$ = $1; }
 ;
@@ -249,16 +239,15 @@ compound_stmt :
 
 stmt_list : 
 	stmt_list stmt 								{yyerror("expected ';' at the end of the last line"); }
-	| stmt_list  stmt  SEMI 					{ $$ = $1;$$->getlist()->push_back($2);}
+	| stmt_list  stmt  SEMI 					{ $$ = $1; $1->list.push_back($2);}
 	| 											{ $$ = new ast::StatementList(); }
 ;
 
 stmt: 
 	non_label_stmt 								{ $$ = $1; }
-	| INTEGER  COLON  non_label_stmt { 
-		CodeGenContext::labels.push_back(atoi($1));
-		$$ = new ast::LabelStmt(atoi($1),$3);
-	}
+	//| INTEGER  COLON  non_label_stmt { 
+		//$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),$3);$$->debug = "stmt";
+	//}
 ;
 non_label_stmt : 
 	error
@@ -269,15 +258,15 @@ non_label_stmt :
 	| repeat_stmt 					{ $$ = (ast::Statement *)$1;}
 	| while_stmt					{ $$ = (ast::Statement *)$1;}	
 	| for_stmt						{ $$ = (ast::Statement *)$1;}
-	| case_stmt 					{ $$ = (ast::Statement *)$1;}	
-	| goto_stmt						{ $$ = (ast::Statement *)$1;}
+//	| case_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}	
+//	| goto_stmt						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
 ;
 
 assign_stmt : 
 
 	IDD  ASSIGN  expression 					{ $$ = new ast::AssignmentStmt(new ast::Identifier($1), $3); }
-	//| ID LB expression RB ASSIGN expression     { $$ = ast_newNode6(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4),ast_dbg($5),$6);$$->debug = "assign_stmt";} 
-	//| ID  DOT  ID  ASSIGN  expression           { $$ = ast_newNode5(ast_dbg($1),ast_dbg($2),ast_dbg($3),ast_dbg($4),$5);$$->debug = "assign_stmt";} 
+	| IDD LB expression RB ASSIGN expression    { $$ = new ast::AssignmentStmt(new ast::ArrayRef(new ast::Identifier($1), $3), $6); }
+    | IDD  DOT  IDD  ASSIGN  expression         { $$ = new ast::AssignmentStmt(new ast::RecordRef(new ast::Identifier($1), new ast::Identifier($3)), $5); }
 ;
 
 proc_stmt : 
@@ -312,18 +301,18 @@ for_stmt :
 	}
 ;
 case_stmt : 
-	CASE expression OF case_expr_list  END		{ $$ = new ast::SwitchStmt($2,$4);}
+	CASE expression OF case_expr_list  END		{ $$ = ast_newNode5(ast_dbg($1),$2,ast_dbg($3),$4,ast_dbg($5));$$->debug = "case_stmt";}
 ;
 case_expr_list : 
-	case_expr_list  case_expr  					{ $$->push_back($2);}
-	|  case_expr 								{ $$= new ast::CaseList;$$->push_back($1);}
+	case_expr_list  case_expr  					{ $$ = ast_newNode2($1,$2);$$->debug = "case_expr_list";}
+	|  case_expr 								{ $$ = ast_newNode1($1);$$->debug = "case_expr_list";}
 ;
 case_expr : 
-	const_value  COLON  stmt  SEMI				{ $$ = new ast::CaseStmt($1,$3);}
-	|  IDD  COLON  stmt  SEMI					{ $$ = new ast::CaseStmt(new ast::Identifier($1),$3);}
+	const_value  COLON  stmt  SEMI				{ $$ = ast_newNode4($1,ast_dbg($2),$3,ast_dbg($4));$$->debug = "case_expr";}
+	|  IDD  COLON  stmt  SEMI					{ $$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "case_expr";}
 ;
 goto_stmt : 
-	GOTO  INTEGER 								{ $$ = new ast::GotoStmt(atoi($2));}
+	GOTO  INTEGER 								{$$ = ast_newNode2(ast_dbg($1),ast_dbg($2));$$->debug = "goto_stmt";}
 ;
 
 expression_list: 
@@ -362,18 +351,13 @@ factor:
 	|  NAME LEFTP expression_list RIGHTP		{ $$ = new ast::FuncCall(new ast::Identifier($1), $3); }
 	|  SYS_FUNCT 								{ $$ = new ast::SysFuncCall(new ast::Identifier($1)); }
     |  SYS_FUNCT LEFTP expression_list RIGHTP 	{ $$ = new ast::SysFuncCall(new ast::Identifier($1), $3); }
-	|  const_value 								{ $$ = (ast::Expression *)$1; };
-	|  LEFTP  expression  RIGHTP 				{ $$ = (ast::Expression *)$2; }
-	|  NOT  factor  							{ $$ = new ast::BinaryOperator(/*need to be bool type*/new ast::IntegerType(1), ast::BinaryOperator::OpType::bit_xor, $2);}
-	|  MINUS  factor  							{$$ = new ast::BinaryOperator(new ast::IntegerType(0), ast::BinaryOperator::OpType::minus, $2);}
-//	|  IDD  LB  expression  RB 					{$$ = ast_newNode4(ast_dbg($1),ast_dbg($2),$3,ast_dbg($4));$$->debug = "factor";}
-//	|  IDD  DOT  IDD 								{$$ = ast_newNode3(ast_dbg($1),ast_dbg($2),ast_dbg($3));$$->debug = "factor";}
+	|  const_value 								{ $$ = $1; };
+	|  LEFTP  expression  RIGHTP 				{ $$ = $2; }
+	|  NOT  factor  							{ $$ = new ast::BinaryOperator(new ast::BooleanType("true"), ast::BinaryOperator::OpType::bit_xor, $2);}
+	|  MINUS  factor  							{ $$ = new ast::BinaryOperator(new ast::IntegerType(0), ast::BinaryOperator::OpType::minus, $2);}
+	|  IDD  LB  expression  RB 					{ $$ = new ast::ArrayRef(new ast::Identifier($1), $3); }
+	|  IDD  DOT  IDD 						    { $$ = new ast::RecordRef(new ast::Identifier($1), new ast::Identifier($3)); }
 ;
-
-//args_list : 
-//	args_list  COMMA  expression  {  
-//	|  expression 				  { $$ = new ast::Exp
-//;
 %%
 
 

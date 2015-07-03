@@ -2,10 +2,10 @@ SRC_DIR = src
 LLC = /usr/local/bin/llc-3.5
 
 all: compiler
-	 make ll llvm.pas
+	 make ll array.pas
 
 compiler:
-	$(MAKE) -C $(SRC_DIR)
+	$(MAKE) -C $(SRC_DIR) -j
 	mv $(SRC_DIR)/pascal .
 
 ll:

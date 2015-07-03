@@ -26,14 +26,26 @@ class Identifier;
 class Routine;
 class Expression;
 class StatementList;
+class IntegerType;
+class RealType;
+class CharType;
+class BooleanType;
+class RangeType;
+class ArrayType;
+class ConstValue;
+class FieldDecl;
+class RecordType;
+class TypeConst;
 class CaseStmt;
-
 
 typedef std::vector<VarDecl *>      VarDeclList;
 typedef std::vector<Identifier *>   IdentifierList;
 typedef std::vector<Routine *>      RoutineList;
 typedef std::vector<std::string>    NameList;
 typedef std::vector<Expression *>   ExpressionList;
+typedef std::vector<ConstDecl *>    ConstDeclList;
+typedef std::vector<FieldDecl *>    FieldDeclList;
+typedef std::vector<TypeConst *>    TypeDeclList;
 typedef std::vector<CaseStmt *>     CaseList;
 // pure virtual class for all ast nodes
 class Node {
@@ -49,7 +61,7 @@ public:
         auto children_list = this->getChildren();
         auto ch_prefix = tail ? prefix + ch_tailStr : prefix + ch_branchStr;
         for(size_t i = 0; i < children_list.size(); i++) {
-            children_list[i] ? children_list[i]->print_node(ch_prefix, i == children_list.size() - 1, false) : []() {}();
+            children_list[i] ? children_list[i]->print_node(ch_prefix, i == children_list.size() - 1, false) : []() {std::cout << "nullptr in tree";}();
         }
     }
 
@@ -81,14 +93,14 @@ public:
 class Program : public Node {
 public:
     LabelDecl*      lable_part;
-    ConstDecl*      const_part;
-    TypeDecl*       type_part;
+    ConstDeclList*  const_part;
+    TypeDeclList*   type_part;
     VarDeclList*    var_part;
     RoutineList*    routine_part;
     StatementList*  routine_body;
 
     Program() {}
-    Program(LabelDecl* lp, ConstDecl* cp, TypeDecl* tp, VarDeclList* vp, RoutineList* rp, StatementList* rb) :
+    Program(LabelDecl* lp, ConstDeclList* cp, TypeDeclList* tp, VarDeclList* vp, RoutineList* rp, StatementList* rb) :
         lable_part(lp),
         const_part(cp),
         type_part(tp),
@@ -97,17 +109,16 @@ public:
         routine_body(rb) {}
     virtual std::vector<Node *> getChildren() { 
         std::vector<Node *> list;
-
-        for(auto i : *(var_part)) list.push_back((Node *)i);
-        for(auto i : *(routine_part)) list.push_back((Node *)i);  
+        for(auto i : *(const_part))         list.push_back((Node *)i);
+        for(auto i : *(type_part))          list.push_back((Node *)i);
+        for(auto i : *(var_part))           list.push_back((Node *)i);
+        for(auto i : *(routine_part))       list.push_back((Node *)i);  
         for(auto i : *(routine_body->getlist())) list.push_back((Node *)i);
         return list;
     }
     virtual std::string toString() { return "Program start"; }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
-
-
 
 class Routine : public Program {
 public:
@@ -140,6 +151,7 @@ public:
         list.push_back((Node *)routine_name);
         list.push_back((Node *)return_type);
         for(auto i : *(argument_list)) list.push_back((Node *)i);
+        for(auto i : *(const_part)) list.push_back((Node *)i);
         for(auto i : *(var_part)) list.push_back((Node *)i);
         for(auto i : *(routine_part)) list.push_back((Node *)i);
             std::cout<<"hahaha"<<this<<";"<<var_part<<"\n";
@@ -156,16 +168,9 @@ public:
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
-
-
 class LabelDecl : public Statement {
 
 };
-
-class ConstDecl : public Statement {
-
-};
-
 class TypeDecl : public Statement {
 public:
     enum class TypeName : int{
@@ -173,28 +178,94 @@ public:
         integer,
         real,
         character,
-        boolean
+        boolean,
+        range,
+        array,
+        record,
+        user_defined
     };
-    std::string     raw_name;
-    TypeName        sys_name;
 
-    TypeDecl(const std::string &str) 
-        : raw_name(str), sys_name(TypeName::error) {}
-    TypeDecl(const char * ptr_c) 
-        : raw_name(*(new std::string(ptr_c))), sys_name(TypeName::error) {}
+    std::string     raw_name = "";
+    TypeName        sys_name = TypeName::error;
+    RangeType*      range_type = nullptr;
+    ArrayType*      array_type = nullptr;
+    RecordType*     record_type = nullptr;
+
+    TypeDecl(ArrayType* atp) : array_type(atp) {}
+    TypeDecl(RecordType* rtp) :  record_type(rtp) {}
+    TypeDecl(RangeType* rtp) : range_type(rtp) {}
+    TypeDecl(TypeName tpname) : sys_name(tpname) { std::cout << "comment: used in const def" << std::endl; }
+    TypeDecl(const std::string &str) : raw_name(str){}
+    TypeDecl(const char * ptr_c) : raw_name(*(new std::string(ptr_c))) {}
+
     void init() { 
-        if (sys_name == TypeName::error && !raw_name.empty()) {
-            if (raw_name == "integer") sys_name = TypeName::integer;
-            if (raw_name == "real") sys_name = TypeName::real;
-            if (raw_name == "char") sys_name = TypeName::character;
-            if (raw_name == "boolean") sys_name = TypeName::boolean;
-        }
+        std::cout << this << std::endl;
+        if (sys_name != TypeName::error)
+            return;
+        if (raw_name == "integer")          sys_name = TypeName::integer;
+        else if (raw_name == "real")        sys_name = TypeName::real;
+        else if (raw_name == "char")        sys_name = TypeName::character;
+        else if (raw_name == "boolean")     sys_name = TypeName::boolean;
+        else if (raw_name.size() > 0)       sys_name = TypeName::user_defined;
+        else if (range_type)                sys_name = TypeName::range;
+        else if (array_type)                sys_name = TypeName::array;
+        //else if (record_type)               sys_name = TypeName::record;
+        else                                throw std::logic_error("Unimplemented type");
     }
     
     llvm::Type* toLLVMType();
     virtual std::string toString() { return raw_name; }
     virtual llvm::Value* CodeGen(CodeGenContext& context);
 };
+
+class ArrayType: public Statement {
+public:
+    TypeDecl*   subscript = nullptr;
+    TypeDecl*   array_type = nullptr;
+
+    ArrayType(TypeDecl* ss, TypeDecl* at) : subscript(ss), array_type(at) {}
+    virtual std::string toString() { return "Array of " + (array_type ? array_type->raw_name : "#error"); }
+    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
+};
+
+class FieldDecl: public Statement {
+public:
+    Identifier* first;
+    TypeDecl*   second; 
+    FieldDecl(Identifier* first, TypeDecl* second) : first(first), second(second) {}
+    virtual std::string toString() { return "FieldDecl"; }
+    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
+};
+
+class RecordType: public Statement {
+public:
+    FieldDeclList*      field_list;
+
+    RecordType(FieldDeclList* list) : field_list(list)  {} 
+    virtual std::string toString() { return "RecordType"; }
+    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
+};
+
+class ArrayRef : public Expression {
+public:
+    Identifier*     array = nullptr;
+    Expression*     index = nullptr;
+
+    ArrayRef(Identifier* array, Expression* index) : array(array), index(index) {}
+    virtual std::string toString() { return "ArrayRef"; }
+    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
+};
+
+class RecordRef : public Expression {
+public:
+    Identifier*     record = nullptr;
+    Identifier*     field = nullptr;
+
+    RecordRef(Identifier* record, Identifier* field) : record(record), field(field) {}
+    virtual std::string toString() { return "RecordRef"; }
+    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
+};
+
 
 class Identifier : public Expression {
 public:
@@ -205,6 +276,56 @@ public:
     virtual std::string toString() { return "Identifier: " + name; }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
+
+class ConstValue : public Expression {
+public:
+    virtual TypeDecl::TypeName getConstType() = 0;
+    virtual int toRange() = 0;
+    /* canRange : bool, if subclass can not be a range, overwrite it and return true  */
+    virtual bool notRange() { return false; } 
+};
+
+
+class TypeConst : public Statement {
+public:
+    Identifier*     name = nullptr;
+    TypeDecl*       type = nullptr;
+
+    TypeConst(Identifier* name, TypeDecl* td) : name(name), type(td) {}
+    virtual std::vector<Node *> getChildren() {
+        std::vector<Node *> list;
+        list.push_back(name);
+        list.push_back(type);
+        return list;
+    }
+    virtual std::string toString() { return "TypeConst"; }
+    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
+};
+
+
+class ConstDecl : public Statement {
+public:
+    Identifier*     name = nullptr;
+    ConstValue*     val = nullptr;
+    TypeDecl*       type = nullptr;
+
+    ConstDecl(Identifier* name, ConstValue* cv)     : name(name), val(cv), type(new TypeDecl(val->getConstType())) {}
+//
+//    ConstDecl(Identifier* name, IntegerType* it)    : name(name), val((ConstValue *)it), type(new TypeDecl("integer")) {}
+//    ConstDecl(Identifier* name, RealType* it)       : name(name), val((ConstValue *)it), type(new TypeDecl("real"))    {}
+//    ConstDecl(Identifier* name, CharType* it)       : name(name), val((ConstValue *)it), type(new TypeDecl("char"))    {}
+//    ConstDecl(Identifier* name, BooleanType* it)    : name(name), val((ConstValue *)it), type(new TypeDecl("boolean")) {}
+    virtual std::vector<Node *> getChildren() { 
+        std::vector<Node *> list; 
+        list.push_back(name); 
+        list.push_back(val);
+        list.push_back(type);
+        return list;
+    }
+    virtual std::string toString() { std::stringstream oss; oss << "Const " << name->name << ":" << val->toRange(); return oss.str(); }
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
+};
+
 
 class VarDecl : public Statement {
 public:
@@ -221,54 +342,65 @@ public:
     std::string toString() { return "VarDecl"; }
     virtual llvm::Value* CodeGen(CodeGenContext& context);
 };
-
-class FuncDecl : public Statement {
-
-};
-
-// Expression subclass 
-class Block : public Expression {
-
-};
-
-class IntegerType : public Expression {
+class IntegerType : public ConstValue {
 public:
     int val;
 
     IntegerType(int val): val(val) {}
+    virtual TypeDecl::TypeName getConstType() { return TypeDecl::TypeName::integer; }
+    virtual int toRange() { return val; }
     virtual std::string toString() { return [=]() {std::stringstream oss; oss << val; return oss.str(); }(); }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
-class RealType : public Expression {
+class RealType : public ConstValue {
 public:
     float val;
 
     RealType(float val) : val(val) {}   
+
+    virtual TypeDecl::TypeName getConstType() { return TypeDecl::TypeName::real; }
+    virtual int toRange() { return 0; }
+    virtual bool notRange() { return true; }
     virtual std::string toString() { std::stringstream oss; oss << val; return oss.str(); }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
-class CharType : public Expression {
+class CharType : public ConstValue {
 public:
     char val;
 
     CharType(const char * p_str) : val(*(p_str)) {}   
+    virtual TypeDecl::TypeName getConstType() { return TypeDecl::TypeName::character; }
+    virtual int toRange() { return (int)val; }
     virtual std::string toString() { std::stringstream oss; oss << val; return oss.str(); }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
-class BooleanType : public Expression {
+class BooleanType : public ConstValue {
 public:
     int val;
 
     BooleanType(const char * str) : val(std::string(str) == "true" ? 1 : 0) {}   
+    virtual TypeDecl::TypeName getConstType() { return TypeDecl::TypeName::boolean; }
+    virtual int toRange() { return val; }
     virtual std::string toString() { std::stringstream oss; oss << val; return oss.str(); }
     virtual llvm::Value *CodeGen(CodeGenContext& context);
 };
 
+class RangeType : public Expression {
+public:
+    //TypeDecl*       base_type; //TODO: distinguish int range, char range, boolean range
+    int             low, high;
+    std::string     low_s, high_s;
+    bool            isNameRange = false;
 
-
+    RangeType(int low, int high) : low(low), high(high) {}
+    RangeType(std::string low_s, std::string high_s) : low_s(low_s), high_s(high_s), isNameRange(true) {}
+    size_t size() { return high - low + 1; }
+    virtual std::string toString() { std::stringstream oss; oss << "[" << low << "," << high << "]"; return oss.str(); }
+    virtual llvm::Value *CodeGen(CodeGenContext& context);
+};
 
 class FuncCall : public Expression, public Statement {
 public:
@@ -392,11 +524,12 @@ public:
 
 class AssignmentStmt : public Statement {
 public:
-    Identifier* lhs; // left-hand side
-    Expression* rhs;
-
+    Identifier* lhs = nullptr; // left-hand side
+    Expression* rhs = nullptr;
+    bool        complex_assign = false;
     AssignmentStmt(Identifier* lhs, Expression* rhs) : lhs(lhs), rhs(rhs) {}
-    
+    AssignmentStmt(ArrayRef* lhs, Expression* rhs) : lhs((Identifier *)lhs), rhs(rhs), complex_assign(true) {}
+    AssignmentStmt(RecordRef* lhs, Expression* rhs) : lhs((Identifier *)lhs), rhs(rhs), complex_assign(true) {}
     virtual std::vector<Node *> getChildren() { 
         std::vector<Node *> list;
         list.push_back((Node *)lhs);
@@ -435,8 +568,6 @@ public:
     RepeatStmt(Expression* condition,StatementList* loopStmt):condition(condition),loopStmt(loopStmt){}
     virtual llvm::Value* CodeGen(CodeGenContext& context);
     virtual std::string toString() { return "repeat"; }
-
-
 };
 // namespace ast end
 class ForStmt : public Statement {
