@@ -27,6 +27,8 @@ struct ast_struct {
 	int val;
 };
 
+#define NDEBUG
+
 #ifdef NDEBUG
 #define DEBUG_TEST_COND 0
 #else

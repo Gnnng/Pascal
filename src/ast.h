@@ -157,7 +157,7 @@ public:
         for(auto i : *(const_part)) list.push_back((Node *)i);
         for(auto i : *(var_part)) list.push_back((Node *)i);
         for(auto i : *(routine_part)) list.push_back((Node *)i);
-            std::cout<<"hahaha"<<this<<";"<<var_part<<"\n";
+            // std::cout<<"hahaha"<<this<<";"<<var_part<<"\n";
         for(auto i : *(routine_body->getlist())) list.push_back((Node *)i);
         
         return list;
@@ -202,7 +202,7 @@ public:
     TypeDecl(const char * ptr_c) : raw_name(*(new std::string(ptr_c))) {init();}
 
     void init() { 
-        std::cout << this << std::endl;
+        // std::cout << this << std::endl;
         if (sys_name != TypeName::error)
             return;
         if (raw_name == "integer")          sys_name = TypeName::integer;
@@ -360,9 +360,9 @@ public:
 
 class RealType : public ConstValue {
 public:
-    float val;
+    double val;
 
-    RealType(float val) : val(val) {}   
+    RealType(double val) : val(val) {}   
 
     virtual TypeDecl::TypeName getConstType() { return TypeDecl::TypeName::real; }
     virtual int toRange() { return 0; }

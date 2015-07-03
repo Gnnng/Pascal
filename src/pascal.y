@@ -242,8 +242,8 @@ compound_stmt :
 ;
 
 stmt_list : 
-	stmt_list stmt 								{yyerror("expected ';' at the end of the last line"); }
-	| stmt_list  stmt  SEMI 					{ $$ = $1; $1->list.push_back($2);}
+	//stmt_list stmt 								{yyerror("expected ';' at the end of the last line"); }
+	 stmt_list  stmt  SEMI 					{ $$ = $1; $1->list.push_back($2);}
 	| 											{ $$ = new ast::StatementList(); }
 ;
 
@@ -262,8 +262,8 @@ non_label_stmt :
 	| repeat_stmt 					{ $$ = (ast::Statement *)$1;}
 	| while_stmt					{ $$ = (ast::Statement *)$1;}	
 	| for_stmt						{ $$ = (ast::Statement *)$1;}
-//	| case_stmt 					{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}	
-//	| goto_stmt						{ $$ = ast_newNode1($1);$$->debug = "non_label_stmt";}
+	| case_stmt 					{ $$ = (ast::Statement *)$1;}	
+	| goto_stmt						{ $$ = (ast::Statement *)$1;}
 ;
 
 assign_stmt : 

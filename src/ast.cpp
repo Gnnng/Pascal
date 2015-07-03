@@ -22,7 +22,7 @@ llvm::Type* ast::TypeDecl::toLLVMType() {
     this->init();    
     switch(this->sys_name) {
         case ast::TypeDecl::TypeName::integer:  return llvm::Type::getInt32Ty(llvm::getGlobalContext());    break;
-        case ast::TypeDecl::TypeName::real:     return llvm::Type::getFloatTy(llvm::getGlobalContext());    break;
+        case ast::TypeDecl::TypeName::real:     return llvm::Type::getDoubleTy(llvm::getGlobalContext());    break;
         case ast::TypeDecl::TypeName::character:return llvm::Type::getInt8Ty(llvm::getGlobalContext());     break;
         case ast::TypeDecl::TypeName::boolean:  return llvm::Type::getInt1Ty(llvm::getGlobalContext());     break;
         case ast::TypeDecl::TypeName::range:    return llvm::Type::getInt32Ty(llvm::getGlobalContext());    break;
@@ -49,7 +49,7 @@ llvm::Value* ast::IntegerType::CodeGen(CodeGenContext& context) {
 }
 llvm::Value* ast::RealType::CodeGen(CodeGenContext& context) {
     std::cout << "Creating real: " << val << std::endl;
-    return llvm::ConstantFP::get(llvm::Type::getFloatTy(llvm::getGlobalContext()), val);
+    return llvm::ConstantFP::get(llvm::getGlobalContext(), llvm::APFloat(val));
 	//return llvm::ConstantFP::get(llvm::Type::getFloatTy(llvm::getGlobalContext()), val, true);
 }
 llvm::Value* ast::CharType::CodeGen(CodeGenContext& context) {
@@ -78,41 +78,81 @@ llvm::Value* ast::RangeType::CodeGen(CodeGenContext& context) {
 }
 llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
     llvm::Instruction::BinaryOps instr;
+    auto op1_val = op1->CodeGen(context);
+    auto op2_val = op2->CodeGen(context);
+
+    if (op1_val->getType()->isDoubleTy() || op2_val->getType()->isDoubleTy()) {
+        switch (op) {
+        // Arithmetic Operations
+        case OpType::plus:    return llvm::BinaryOperator::Create( llvm::Instruction::FAdd,
+                op1_val, op2_val, "", context.currentBlock());
+        case OpType::minus:   return llvm::BinaryOperator::Create( llvm::Instruction::FSub,
+                op1_val, op2_val, "", context.currentBlock());
+        case OpType::mul:     return llvm::BinaryOperator::Create( llvm::Instruction::FMul,
+                op1_val, op2_val, "", context.currentBlock());
+        case OpType::div:     return llvm::BinaryOperator::Create( llvm::Instruction::SDiv,
+                op1_val, op2_val, "", context.currentBlock());
+        case OpType::mod:     return llvm::BinaryOperator::Create( llvm::Instruction::SRem,
+                op1_val, op2_val, "", context.currentBlock());    
+        case OpType::bit_and:     return llvm::BinaryOperator::Create( llvm::Instruction::And,
+                op1_val, op2_val, "", context.currentBlock());  
+        case OpType::bit_or:     return llvm::BinaryOperator::Create( llvm::Instruction::Or,
+                op1_val, op2_val, "", context.currentBlock()); 
+        case OpType::bit_xor:     return llvm::BinaryOperator::Create( llvm::Instruction::Xor,
+                op1_val, op2_val, "", context.currentBlock()); 
+        // Logical Operations
+        
+        case OpType::eq:  {auto ret = llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_EQ,
+                op1_val, op2_val, "", context.currentBlock()); 
+                          std::cout << "boolean value is int1 " << ret->getType()->isIntegerTy() << std::endl;
+                          return ret;}
+        case OpType::ne:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_NE,
+                op1_val, op2_val, "", context.currentBlock());
+        case OpType::lt:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SLT,
+                op1_val, op2_val, "", context.currentBlock());
+        case OpType::gt:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SGT,
+                op1_val, op2_val, "", context.currentBlock());
+        case OpType::le:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SLE,
+                op1_val, op2_val, "", context.currentBlock());
+        case OpType::ge:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SGE,
+                op1_val, op2_val, "", context.currentBlock());
+        //case OpType::and: return  llvm::cmp
+        }
+    } else 
     switch (op) {
-   
     // Arithmetic Operations
     case OpType::plus:    return llvm::BinaryOperator::Create( llvm::Instruction::Add,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+            op1_val, op2_val, "", context.currentBlock());
     case OpType::minus:   return llvm::BinaryOperator::Create( llvm::Instruction::Sub,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+            op1_val, op2_val, "", context.currentBlock());
     case OpType::mul:     return llvm::BinaryOperator::Create( llvm::Instruction::Mul,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+            op1_val, op2_val, "", context.currentBlock());
     case OpType::div:     return llvm::BinaryOperator::Create( llvm::Instruction::SDiv,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+            op1_val, op2_val, "", context.currentBlock());
     case OpType::mod:     return llvm::BinaryOperator::Create( llvm::Instruction::SRem,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());    
+            op1_val, op2_val, "", context.currentBlock());    
     case OpType::bit_and:     return llvm::BinaryOperator::Create( llvm::Instruction::And,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());  
+            op1_val, op2_val, "", context.currentBlock());  
     case OpType::bit_or:     return llvm::BinaryOperator::Create( llvm::Instruction::Or,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock()); 
+            op1_val, op2_val, "", context.currentBlock()); 
     case OpType::bit_xor:     return llvm::BinaryOperator::Create( llvm::Instruction::Xor,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock()); 
+            op1_val, op2_val, "", context.currentBlock()); 
     // Logical Operations
     
     case OpType::eq:  {auto ret = llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_EQ,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock()); 
+            op1_val, op2_val, "", context.currentBlock()); 
                       std::cout << "boolean value is int1 " << ret->getType()->isIntegerTy() << std::endl;
                       return ret;}
     case OpType::ne:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_NE,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+            op1_val, op2_val, "", context.currentBlock());
     case OpType::lt:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SLT,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+            op1_val, op2_val, "", context.currentBlock());
     case OpType::gt:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SGT,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+            op1_val, op2_val, "", context.currentBlock());
     case OpType::le:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SLE,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+            op1_val, op2_val, "", context.currentBlock());
     case OpType::ge:  return  llvm::CmpInst::Create( llvm::Instruction::ICmp, llvm::CmpInst::ICMP_SGE,
-            op1->CodeGen(context), op2->CodeGen(context), "", context.currentBlock());
+            op1_val, op2_val, "", context.currentBlock());
     //case OpType::and: return  llvm::cmp
     }
     return nullptr;
@@ -158,17 +198,26 @@ llvm::Value* ast::VarDecl::CodeGen(CodeGenContext& context) {
             DBVAR("decl global of array");
             auto sub_type = this->type->array_type->array_type->sys_name;
             auto vec = std::vector<llvm::Constant *>();
+            
+            llvm::Constant* ele_of_arr;
+            switch(sub_type) {
+                case ast::TypeDecl::TypeName::integer: 
+                    DBMSG("into integer");
+                    ele_of_arr = llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 0, true);
+                    break;
+                case ast::TypeDecl::TypeName::real: 
+                    DBMSG("into real");
+                    ele_of_arr = llvm::ConstantFP::get(llvm::Type::getDoubleTy(llvm::getGlobalContext()), 0);
+                    break;
+            }
             for(int i = 0 ; i < this->type->array_type->subscript->range_type->size(); i++) {
-                auto const_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 0, true);
-                vec.push_back(const_0);
+                vec.push_back(ele_of_arr);
             }
             auto arr_type_0 = (llvm::ArrayType *) this->type->toLLVMType();
             auto arr_const = llvm::ConstantArray::get(arr_type_0, vec);
 
             auto go= new llvm::GlobalVariable(*context.module, this->type->toLLVMType(), false, llvm::GlobalValue::ExternalLinkage , arr_const, this->name->name);
             alloc = go;
-
-
         } else {
             DBVAR("decl global not a array");
         auto go= new llvm::GlobalVariable(*context.module, this->type->toLLVMType(), false, llvm::GlobalValue::ExternalLinkage , llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 0, true), this->name->name);
@@ -326,7 +375,7 @@ llvm::Value* ast::SysProcCall::SysProc_write(CodeGenContext& context, bool write
             printf_format += "%d";     
             std::cout << "SysFuncCall write variable previous name" << arg_val->getName().str() << std::endl;
             printf_args.push_back(arg_val);
-        } else if (arg_val->getType() == llvm::Type::getDoubleTy(llvm::getGlobalContext())) {
+        } else if (arg_val->getType()->isDoubleTy() /*== llvm::Type::getDoubleTy(llvm::getGlobalContext())*/) {
             printf_format += "%lf";
             printf_args.push_back(arg_val);
         } else if (arg_val->getType() == llvm::Type::getInt8PtrTy(llvm::getGlobalContext())) {

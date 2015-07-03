@@ -25,7 +25,7 @@ void yyerror(char *s, ...) {
 	// fprintf(stdout, "Error: %s\n", errmsg);
 	// va_start(ap, s);
 	// vfprintf(stdout, s, ap);
-	fprintf(stdout, "At line %d: %s\n", yylineno, yytext);
+	// fprintf(stdout, "At line %d: %s\n", yylineno, yytext);
 	// fprintf(stdout, "\n");
 }
 

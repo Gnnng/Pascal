@@ -2,8 +2,7 @@ program hello;
 const 
 	ta = 3;
 var 
-	c : ar;
-	ccc: array [1..3] of integer;
+	c : array [0..10] of real;
 	i : integer;
 	j : integer;
 	k : integer;
@@ -19,10 +18,11 @@ begin
 	c[8] := 0.9;
 	c[9] := 1.0;
 	c[10] := 1.1;
+	writeln(1.1);
 	for i := 0 to 10 do
 	begin
 		c[i] := c[i] * c[i];
-		writeln(c[i]);
+		writeln(i, c[i]);
 	end
 	;
 end

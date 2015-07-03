@@ -63,8 +63,8 @@ public:
         // }
         // std::cout<<"location:"<<nowBlock->locals[name]<<"\n";
         llvm::Function* nowFunc = currentFunction;
-        std::cerr << "start dump" << std::endl;
-        nowFunc->getValueSymbolTable().dump();
+        // std::cerr << "start dump" << std::endl;
+        // nowFunc->getValueSymbolTable().dump();
         if ((nowFunc->getValueSymbolTable().lookup(name))==NULL) {
             
             if (module->getGlobalVariable(name)== NULL)
