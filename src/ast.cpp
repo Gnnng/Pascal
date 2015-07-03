@@ -148,9 +148,14 @@ llvm::Value* ast::ConstDecl::CodeGen(CodeGenContext& context) {
 
 llvm::Value* ast::VarDecl::CodeGen(CodeGenContext& context) {
     std::cout << "Creating variable declaration " << this->name->name << std::endl;
-    auto alloc = new llvm::AllocaInst(this->type->toLLVMType(), this->name->name.c_str(), context.currentBlock());
-    DBVAR(typeid(this->name->name).name());
-    DBVAR(typeid(context.getValue(this->name->name)).name());
+    llvm::Value* alloc;
+    if (isGolbal)
+    {
+        auto go= new llvm::GlobalVariable(*context.module, this->type->toLLVMType(), false, llvm::GlobalValue::ExternalLinkage , llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 0, true), this->name->name);
+        alloc = go;
+    }
+    else
+        alloc = new llvm::AllocaInst(this->type->toLLVMType(), this->name->name.c_str(), context.currentBlock());
     context.insert(this->name->name,alloc);
     std::cout << "Creating variable declaration successfully " << this->name->name << std::endl;
     return alloc;
@@ -165,8 +170,10 @@ llvm::Value* ast::Program::CodeGen(CodeGenContext& context) {
         last = const_decl->CodeGen(context);
     }
     // deal with variable declaration
+
     for(auto var_decl: *(this->var_part)) {
         std::cout << "Generating code for " << typeid(var_decl).name() << std::endl;
+        var_decl->isGolbal = 1;
         last = var_decl->CodeGen(context);
     }
     for(auto routine : *(this->routine_part)) {
@@ -185,9 +192,10 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
         arg_types.push_back(it->type->toLLVMType()); 
     auto f_type = llvm::FunctionType::get(this->isProcedure() ? llvm::Type::getVoidTy(llvm::getGlobalContext()) : this->return_type->toLLVMType(), llvm::makeArrayRef(arg_types), false);
     auto function = llvm::Function::Create(f_type, llvm::GlobalValue::InternalLinkage, this->routine_name->name.c_str(), context.module);
-    auto block = llvm::BasicBlock::Create(getGlobalContext(), "entry", function, 0);
+    auto block = llvm::BasicBlock::Create(getGlobalContext(), "entry", function,NULL);
     auto oldFunc = context.currentFunction;
     context.currentFunction = function;
+    auto oldBlock = context.currentBlock();
     context.parent[function] = oldFunc;
     // push block and start routine
     context.pushBlock(block);
@@ -215,13 +223,19 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
         std::cout << "Generating code for decl " << typeid(var_decl).name() << std::endl;
         var_decl->CodeGen(context);
     }
+    for(auto routine : *(this->routine_part)) {
+        std::cout << "Generating code for " << typeid(routine).name() << std::endl;
+        routine->CodeGen(context);
+    }
     // deal with program statements
     std::cout<<"var part suc!\n";
     routine_body->CodeGen(context);
     // return value
+
+    
     if (this->isFunction()) {
         std::cout << "Generating return value for function" << std::endl;
-        auto load_ret = new llvm::LoadInst(context.locals()[this->routine_name->name], "", false, context.currentBlock());
+        auto load_ret = new llvm::LoadInst(context.getValue(this->routine_name->name), "", false, context.currentBlock());
         llvm::ReturnInst::Create(llvm::getGlobalContext(), load_ret, context.currentBlock());
     }
     else if(this->isProcedure()) {
@@ -231,7 +245,8 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
     }
 
     // pop block and finsh
-    context.popBlock();
+    while (context.currentBlock() != oldBlock)
+        context.popBlock();
     context.currentFunction = oldFunc;
     std::cout << "Creating " << this->toString() << ":" << this->routine_name->name << std::endl;
     return function;
@@ -239,7 +254,7 @@ llvm::Value* ast::Routine::CodeGen(CodeGenContext& context) {
 llvm::Value* ast::FuncCall::CodeGen(CodeGenContext& context) {
     auto function = context.module->getFunction(this->id->name.c_str());
     if (function == nullptr)
-        throw std::domain_error("Function not defined" + this->id->name);
+        throw std::domain_error("Function not defined: " + this->id->name);
     std::vector<Value*> args;
     for(auto arg : *(this->argument_list)) {
         args.push_back(arg->CodeGen(context));
@@ -249,7 +264,18 @@ llvm::Value* ast::FuncCall::CodeGen(CodeGenContext& context) {
     return call;
 }
 
-llvm::Value* ast::ProcCall::CodeGen(CodeGenContext& context) {}
+llvm::Value* ast::ProcCall::CodeGen(CodeGenContext& context) {
+    auto function = context.module->getFunction(this->id->name.c_str());
+    if (function == nullptr)
+        throw std::domain_error("procedure not defined: " + this->id->name);
+    std::vector<Value*> args;
+    for(auto arg : *(this->argument_list)) {
+        args.push_back(arg->CodeGen(context));
+    }
+    auto call = llvm::CallInst::Create(function, llvm::makeArrayRef(args), "", context.currentBlock());
+    std::cout << "Creating method(p) call: " << this->id->name << std::endl;
+    return call;
+}
 
 llvm::Value* ast::SysFuncCall::CodeGen(CodeGenContext& context) {}
 
