@@ -8,7 +8,7 @@ begin
 		gcd := a;
 	end
 	else begin
-		gcd := gcd(b , a % b);
+		gcd := gcd(b , a mod b);
 	end
 	;
 end

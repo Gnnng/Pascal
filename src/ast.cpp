@@ -151,8 +151,29 @@ llvm::Value* ast::VarDecl::CodeGen(CodeGenContext& context) {
     llvm::Value* alloc;
     if (isGolbal)
     {
+            DBVAR((int)this->type->sys_name);
+            DBVAR(this->type->array_type);
+            DBVAR(this->type->raw_name);
+        if (this->type->sys_name  == ast::TypeDecl::TypeName::array) {
+            DBVAR("decl global of array");
+            auto sub_type = this->type->array_type->array_type->sys_name;
+            auto vec = std::vector<llvm::Constant *>();
+            for(int i = 0 ; i < this->type->array_type->subscript->range_type->size(); i++) {
+                auto const_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 0, true);
+                vec.push_back(const_0);
+            }
+            auto arr_type_0 = (llvm::ArrayType *) this->type->toLLVMType();
+            auto arr_const = llvm::ConstantArray::get(arr_type_0, vec);
+
+            auto go= new llvm::GlobalVariable(*context.module, this->type->toLLVMType(), false, llvm::GlobalValue::ExternalLinkage , arr_const, this->name->name);
+            alloc = go;
+
+
+        } else {
+            DBVAR("decl global not a array");
         auto go= new llvm::GlobalVariable(*context.module, this->type->toLLVMType(), false, llvm::GlobalValue::ExternalLinkage , llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 0, true), this->name->name);
         alloc = go;
+        }
     }
     else
         alloc = new llvm::AllocaInst(this->type->toLLVMType(), this->name->name.c_str(), context.currentBlock());
@@ -528,6 +549,9 @@ llvm::Value* ast::ArrayRef::getRef(CodeGenContext& context) {
     auto idx_list = std::vector<llvm::Value*>();
     idx_list.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 0));
     //idx_list.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 0));
+    DBVAR("before codgen");
     idx_list.push_back(index->CodeGen(context));
-    return llvm::GetElementPtrInst::CreateInBounds(arr, llvm::ArrayRef<llvm::Value*>(idx_list), this->array->name, context.currentBlock());
+    DBVAR("after codgen");
+    DBVAR(this->index->toString());
+    return llvm::GetElementPtrInst::CreateInBounds(arr, llvm::ArrayRef<llvm::Value*>(idx_list), "tempname", context.currentBlock());
 }

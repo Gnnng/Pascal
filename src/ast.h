@@ -194,12 +194,12 @@ public:
     ArrayType*      array_type = nullptr;
     RecordType*     record_type = nullptr;
 
-    TypeDecl(ArrayType* atp) : array_type(atp) {}
-    TypeDecl(RecordType* rtp) :  record_type(rtp) {}
-    TypeDecl(RangeType* rtp) : range_type(rtp) {}
-    TypeDecl(TypeName tpname) : sys_name(tpname) { std::cout << "comment: used in const def" << std::endl; }
-    TypeDecl(const std::string &str) : raw_name(str){}
-    TypeDecl(const char * ptr_c) : raw_name(*(new std::string(ptr_c))) {}
+    TypeDecl(ArrayType* atp) : array_type(atp) {init();}
+    TypeDecl(RecordType* rtp) :  record_type(rtp) {init();}
+    TypeDecl(RangeType* rtp) : range_type(rtp) {init();}
+    TypeDecl(TypeName tpname) : sys_name(tpname) { std::cout << "comment: used in const def" << std::endl; init();}
+    TypeDecl(const std::string &str) : raw_name(str){init();}
+    TypeDecl(const char * ptr_c) : raw_name(*(new std::string(ptr_c))) {init();}
 
     void init() { 
         std::cout << this << std::endl;

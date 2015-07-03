@@ -47,6 +47,7 @@ public:
     GenericValue runCode();
     Value* getValue(std::string name){
         std::cout << "Start getValue for " << name << std::endl;
+        //currentFunction->getValueSymbolTable().dump();
         std::cout<<"found:"<<currentFunction->getValueSymbolTable().lookup(name)<<"\n";
         std::cout<<"main:"<<mainFunction<<"\n";
         std::cout<<"current:"<<currentFunction<<"\n";
@@ -62,6 +63,8 @@ public:
         // }
         // std::cout<<"location:"<<nowBlock->locals[name]<<"\n";
         llvm::Function* nowFunc = currentFunction;
+        std::cerr << "start dump" << std::endl;
+        nowFunc->getValueSymbolTable().dump();
         if ((nowFunc->getValueSymbolTable().lookup(name))==NULL) {
             
             if (module->getGlobalVariable(name)== NULL)
