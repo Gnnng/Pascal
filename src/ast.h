@@ -226,7 +226,7 @@ public:
 
     ArrayType(TypeDecl* ss, TypeDecl* at) : subscript(ss), array_type(at) {}
     virtual std::string toString() { return "Array of " + (array_type ? array_type->raw_name : "#error"); }
-    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
 };
 
 class FieldDecl: public Statement {
@@ -246,6 +246,15 @@ public:
     virtual std::string toString() { return "RecordType"; }
     virtual llvm::Value* CodeGen(CodeGenContext& context) {}
 };
+class Identifier : public Expression {
+public:
+    std::string         name;
+
+    Identifier(const std::string& name) : name(name) {}
+    Identifier(const char * ptr_s) : name(*(new std::string(ptr_s))) {}
+    virtual std::string toString() { return "Identifier: " + name; }
+    virtual llvm::Value *CodeGen(CodeGenContext& context);
+};
 
 class ArrayRef : public Expression {
 public:
@@ -253,8 +262,9 @@ public:
     Expression*     index = nullptr;
 
     ArrayRef(Identifier* array, Expression* index) : array(array), index(index) {}
-    virtual std::string toString() { return "ArrayRef"; }
-    virtual llvm::Value* CodeGen(CodeGenContext& context) {}
+    llvm::Value* getRef(CodeGenContext& context);
+    virtual std::string toString() { return "ArrayRef: " + array->name; }
+    virtual llvm::Value* CodeGen(CodeGenContext& context);
 };
 
 class RecordRef : public Expression {
@@ -268,15 +278,6 @@ public:
 };
 
 
-class Identifier : public Expression {
-public:
-    std::string         name;
-
-    Identifier(const std::string& name) : name(name) {}
-    Identifier(const char * ptr_s) : name(*(new std::string(ptr_s))) {}
-    virtual std::string toString() { return "Identifier: " + name; }
-    virtual llvm::Value *CodeGen(CodeGenContext& context);
-};
 
 class ConstValue : public Expression {
 public:
@@ -531,6 +532,11 @@ public:
     AssignmentStmt(Identifier* lhs, Expression* rhs) : lhs(lhs), rhs(rhs) {}
     AssignmentStmt(ArrayRef* lhs, Expression* rhs) : lhs((Identifier *)lhs), rhs(rhs), complex_assign(true) {}
     AssignmentStmt(RecordRef* lhs, Expression* rhs) : lhs((Identifier *)lhs), rhs(rhs), complex_assign(true) {}
+
+    std::string getlhsName() {
+        return complex_assign ? ((ast::ArrayRef*) this->lhs)->array->name : this->lhs->name;
+    }
+
     virtual std::vector<Node *> getChildren() { 
         std::vector<Node *> list;
         list.push_back((Node *)lhs);

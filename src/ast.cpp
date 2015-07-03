@@ -12,6 +12,7 @@
 #include <cassert>
 
 #include "CodeGenContext.h"
+#include "utils.h"
 using namespace std;
 // int ast::IfStmt::instanceCount = 0;
 // static member
@@ -118,12 +119,20 @@ llvm::Value* ast::BinaryOperator::CodeGen(CodeGenContext& context) {
 }
 
 llvm::Value* ast::AssignmentStmt::CodeGen(CodeGenContext& context) {
-    std::cout << "Creating assignemnt for id " << this->lhs->name << endl;
+    if (this->complex_assign)
+        std::cout << "Creating assignment for array: " << getlhsName() << "[]" << std::endl;
+    else
+        std::cout << "Creating assignemnt for id " << getlhsName() << std::endl;
     // if (context.locals().find(lhs->name) == context.locals().end()) {
     //     throw std::domain_error("Undeclared variable " + lhs->name);
     //     return nullptr;
     // }
-    return new llvm::StoreInst(rhs->CodeGen(context), context.getValue(lhs->name), false, context.currentBlock());
+    if (this->complex_assign)
+        return new llvm::StoreInst(rhs->CodeGen(context), ((ArrayRef* )lhs)->getRef(context), false, context.currentBlock());
+
+    //auto rhs_val = new llvm::LoadInst(rhs->CodeGen(context), "", false, context.currentBlock());
+    //return new llvm::StoreInst(rhs_val, context.getValue(this->getlhsName()), false, context.currentBlock());
+    return new llvm::StoreInst(rhs->CodeGen(context), context.getValue(this->getlhsName()), false, context.currentBlock());
 }
 
 llvm::Value* ast::ConstDecl::CodeGen(CodeGenContext& context) {
@@ -140,8 +149,10 @@ llvm::Value* ast::ConstDecl::CodeGen(CodeGenContext& context) {
 llvm::Value* ast::VarDecl::CodeGen(CodeGenContext& context) {
     std::cout << "Creating variable declaration " << this->name->name << std::endl;
     auto alloc = new llvm::AllocaInst(this->type->toLLVMType(), this->name->name.c_str(), context.currentBlock());
+    DBVAR(typeid(this->name->name).name());
+    DBVAR(typeid(context.getValue(this->name->name)).name());
     context.insert(this->name->name,alloc);
-    std::cout << "Creating variable declaration suc!" << this->name->name << std::endl;
+    std::cout << "Creating variable declaration successfully " << this->name->name << std::endl;
     return alloc;
 }
 
@@ -465,4 +476,32 @@ llvm::Value* ast::LabelStmt::CodeGen(CodeGenContext& context){
     return statement->CodeGen(context);
 }
 
+llvm::Value* ast::ArrayType::CodeGen(CodeGenContext& context) {
+}
 
+llvm::Value* ast::ArrayRef::CodeGen(CodeGenContext& context) {
+    return new llvm::LoadInst(this->getRef(context), "", false, context.currentBlock());
+}
+
+llvm::Value* ast::ArrayRef::getRef(CodeGenContext& context) {
+    DBMSG("Creating ArrayRef");
+    DBVAR(this->array->name);
+    auto arr = context.getValue(this->array->name);
+    DBVAR(typeid(arr).name());
+    DBMSG("Creating ArrayRef: array part is generated");
+    
+ //   auto a_type = llvm::ArrayType::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 9);
+//    auto arr_t = new llvm::AllocaInst(a_type, std::string("mem"), context.currentBlock());
+
+//    DBVAR(typeid(arr_t).name());
+//    auto vec = std::vector<Value *>();
+//    vec.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 0));
+//    vec.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 1));
+//    auto ret = llvm::GetElementPtrInst::CreateInBounds(arr_t, llvm::ArrayRef<llvm::Value*>(vec), "ret", context.currentBlock());
+//    //return ret;
+    auto idx_list = std::vector<llvm::Value*>();
+    idx_list.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 0));
+    //idx_list.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvm::getGlobalContext()), 0));
+    idx_list.push_back(index->CodeGen(context));
+    return llvm::GetElementPtrInst::CreateInBounds(arr, llvm::ArrayRef<llvm::Value*>(idx_list), this->array->name, context.currentBlock());
+}

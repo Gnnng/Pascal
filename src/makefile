@@ -25,8 +25,8 @@ parser.hpp: parser.cpp
 tokenizer.cpp: ${NAME}.l
 	flex -o tokenizer.cpp ${NAME}.l
 
-%.o: %.cpp %.h
-	@g++ -c $(CXXFLAGS) -g -o $@ $< 
+%.o: %.cpp ast.h CodeGenContext.h utils.h ccalc.h
+	g++ -c $(CXXFLAGS) -g -o $@ $< 
 
 
 $(NAME): $(OBJS)

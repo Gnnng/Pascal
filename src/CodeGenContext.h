@@ -46,6 +46,7 @@ public:
     void generateCode(ast::Program& root);
     GenericValue runCode();
     Value* getValue(std::string name){
+        std::cout << "Start getValue for " << name << std::endl;
         std::cout<<"found:"<<currentFunction->getValueSymbolTable().lookup(name)<<"\n";
         std::cout<<"main:"<<mainFunction<<"\n";
         std::cout<<"current:"<<currentFunction<<"\n";
