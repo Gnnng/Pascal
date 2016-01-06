@@ -10,7 +10,7 @@ a pascal compiler implemented by LLVM 3.5.1.
 # Authors
 
 - Li Yiting ([@lyt9304](http://github.com/lyt9304))
-- Zhang yuhao ([@denil1111](http://github.com/denil1111))
+- Zhang Yuhao ([@denil1111](http://github.com/denil1111))
 - Gong Deli ([@Gnnng](http://github.com/Gnnng))
 
 # Build
